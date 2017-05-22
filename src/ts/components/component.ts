@@ -1,7 +1,7 @@
-import {Guid} from '../guid';
-import {DOM} from '../dom';
-import {EventDispatcher, NoArgs, Event} from '../eventdispatcher';
-import {UIInstanceManager} from '../uimanager';
+import { Guid } from '../guid';
+import { DOM } from '../dom';
+import { EventDispatcher, NoArgs, Event } from '../eventdispatcher';
+import { UIInstanceManager } from '../uimanager';
 
 /**
  * Base configuration interface for a component.
@@ -153,8 +153,8 @@ export class Component<Config extends ComponentConfig> {
     // Create the configuration for this component
     this.config = <Config>this.mergeConfig(config, {
       tag: 'div',
-      id: 'bmpui-id-' + Guid.next(),
-      cssPrefix: 'bmpui',
+      id: 'egghead-id-' + Guid.next(),
+      cssPrefix: 'egghead',
       cssClass: 'ui-component',
       cssClasses: [],
       hidden: false

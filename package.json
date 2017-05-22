@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "gulp npm-prepare",
     "build": "gulp",
-    "dev": "gulp watch",
-    "serve": "gulp serve",
+    "watch": "gulp watch",
+    "dev": "gulp serve",
     "lint": "gulp lint",
     "build-prod": "gulp build-prod"
   },
