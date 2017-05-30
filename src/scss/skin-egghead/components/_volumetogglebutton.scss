@@ -2,7 +2,7 @@
 @import '../mixins';
 .#{$prefix}-ui-volumetogglebutton {
   @extend %ui-button;
-  background-image: svg('assets/skin-egghead/images/music-on.svg');
+  background-image: svg('assets/skin-egghead/images/music-onX.svg');
   &:hover {
     @include svg-icon-shadow;
   }
