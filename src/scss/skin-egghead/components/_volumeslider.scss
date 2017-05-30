@@ -1,11 +1,9 @@
 @import '../variables';
-
 .#{$prefix}-ui-volumeslider {
   @extend %ui-seekbar;
-
   .#{$prefix}-seekbar {
     .#{$prefix}-seekbar-playbackposition-marker {
-      background-image: svg('assets/skin-modern/images/dot-volume.svg');
+      background-image: svg('assets/skin-egghead/images/dot-volume.svg');
     }
   }
 }

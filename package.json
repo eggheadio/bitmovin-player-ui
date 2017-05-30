@@ -8,7 +8,7 @@
     "prepublish": "gulp npm-prepare",
     "build": "gulp",
     "watch": "gulp watch",
-    "dev": "gulp serve",
+    "dev": "node --inspect ./node_modules/.bin/gulp serve",
     "lint": "gulp lint",
     "build-prod": "gulp build-prod"
   },

@@ -1,20 +1,15 @@
 @import '../variables';
 @import '../mixins';
-
 .#{$prefix}-ui-playbacktogglebutton {
   @extend %ui-button;
-
-  background-image: svg('assets/skin-modern/images/play.svg');
-
+  background-image: svg('assets/skin-egghead/images/play.svg');
   &:hover {
     @include svg-icon-shadow;
   }
-
   &.#{$prefix}-on {
-    background-image: svg('assets/skin-modern/images/pause.svg');
-
+    background-image: svg('assets/skin-egghead/images/pause.svg');
     &.#{$prefix}-stoptoggle {
-      background-image: svg('assets/skin-modern/images/stop.svg');
+      background-image: svg('assets/skin-egghead/images/stop.svg');
     }
   }
 }

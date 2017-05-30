@@ -1,50 +1,50 @@
-import {UIContainer} from './components/uicontainer';
-import {DOM} from './dom';
-import {Component, ComponentConfig} from './components/component';
-import {Container} from './components/container';
-import {PlaybackToggleButton} from './components/playbacktogglebutton';
-import {FullscreenToggleButton} from './components/fullscreentogglebutton';
-import {VRToggleButton} from './components/vrtogglebutton';
-import {VolumeToggleButton} from './components/volumetogglebutton';
-import {SeekBar} from './components/seekbar';
-import {PlaybackTimeLabel, PlaybackTimeLabelMode} from './components/playbacktimelabel';
-import {ControlBar} from './components/controlbar';
-import {NoArgs, EventDispatcher, CancelEventArgs} from './eventdispatcher';
-import {SettingsToggleButton} from './components/settingstogglebutton';
-import {SettingsPanel, SettingsPanelItem} from './components/settingspanel';
-import {VideoQualitySelectBox} from './components/videoqualityselectbox';
-import {Watermark} from './components/watermark';
-import {AudioQualitySelectBox} from './components/audioqualityselectbox';
-import {AudioTrackSelectBox} from './components/audiotrackselectbox';
-import {SeekBarLabel} from './components/seekbarlabel';
-import {VolumeSlider} from './components/volumeslider';
-import {SubtitleSelectBox} from './components/subtitleselectbox';
-import {SubtitleOverlay} from './components/subtitleoverlay';
-import {VolumeControlButton} from './components/volumecontrolbutton';
-import {CastToggleButton} from './components/casttogglebutton';
-import {CastStatusOverlay} from './components/caststatusoverlay';
-import {ErrorMessageOverlay} from './components/errormessageoverlay';
-import {TitleBar} from './components/titlebar';
+import { UIContainer } from './components/uicontainer';
+import { DOM } from './dom';
+import { Component, ComponentConfig } from './components/component';
+import { Container } from './components/container';
+import { PlaybackToggleButton } from './components/playbacktogglebutton';
+import { FullscreenToggleButton } from './components/fullscreentogglebutton';
+import { VRToggleButton } from './components/vrtogglebutton';
+import { VolumeToggleButton } from './components/volumetogglebutton';
+import { SeekBar } from './components/seekbar';
+import { PlaybackTimeLabel, PlaybackTimeLabelMode } from './components/playbacktimelabel';
+import { ControlBar } from './components/controlbar';
+import { NoArgs, EventDispatcher, CancelEventArgs } from './eventdispatcher';
+import { SettingsToggleButton } from './components/settingstogglebutton';
+import { SettingsPanel, SettingsPanelItem } from './components/settingspanel';
+import { VideoQualitySelectBox } from './components/videoqualityselectbox';
+import { Watermark } from './components/watermark';
+import { AudioQualitySelectBox } from './components/audioqualityselectbox';
+import { AudioTrackSelectBox } from './components/audiotrackselectbox';
+import { SeekBarLabel } from './components/seekbarlabel';
+import { VolumeSlider } from './components/volumeslider';
+import { SubtitleSelectBox } from './components/subtitleselectbox';
+import { SubtitleOverlay } from './components/subtitleoverlay';
+import { VolumeControlButton } from './components/volumecontrolbutton';
+import { CastToggleButton } from './components/casttogglebutton';
+import { CastStatusOverlay } from './components/caststatusoverlay';
+import { ErrorMessageOverlay } from './components/errormessageoverlay';
+import { TitleBar } from './components/titlebar';
 import Player = bitmovin.player.Player;
-import {RecommendationOverlay} from './components/recommendationoverlay';
-import {AdMessageLabel} from './components/admessagelabel';
-import {AdSkipButton} from './components/adskipbutton';
-import {AdClickOverlay} from './components/adclickoverlay';
+import { RecommendationOverlay } from './components/recommendationoverlay';
+import { AdMessageLabel } from './components/admessagelabel';
+import { AdSkipButton } from './components/adskipbutton';
+import { AdClickOverlay } from './components/adclickoverlay';
 import EVENT = bitmovin.player.EVENT;
 import PlayerEventCallback = bitmovin.player.PlayerEventCallback;
 import AdStartedEvent = bitmovin.player.AdStartedEvent;
-import {ArrayUtils, UIUtils, BrowserUtils} from './utils';
-import {PlaybackSpeedSelectBox} from './components/playbackspeedselectbox';
-import {BufferingOverlay} from './components/bufferingoverlay';
-import {CastUIContainer} from './components/castuicontainer';
-import {PlaybackToggleOverlay} from './components/playbacktoggleoverlay';
-import {CloseButton} from './components/closebutton';
-import {MetadataLabel, MetadataLabelContent} from './components/metadatalabel';
-import {Label} from './components/label';
+import { ArrayUtils, UIUtils, BrowserUtils } from './utils';
+import { PlaybackSpeedSelectBox } from './components/playbackspeedselectbox';
+import { BufferingOverlay } from './components/bufferingoverlay';
+import { CastUIContainer } from './components/castuicontainer';
+import { PlaybackToggleOverlay } from './components/playbacktoggleoverlay';
+import { CloseButton } from './components/closebutton';
+import { MetadataLabel, MetadataLabelContent } from './components/metadatalabel';
+import { Label } from './components/label';
 import PlayerEvent = bitmovin.player.PlayerEvent;
-import {AirPlayToggleButton} from './components/airplaytogglebutton';
-import {PictureInPictureToggleButton} from './components/pictureinpicturetogglebutton';
-import {Spacer} from './components/spacer';
+import { AirPlayToggleButton } from './components/airplaytogglebutton';
+import { PictureInPictureToggleButton } from './components/pictureinpicturetogglebutton';
+import { Spacer } from './components/spacer';
 
 export interface UIRecommendationConfig {
   title: string;
@@ -369,6 +369,7 @@ export namespace UIManager.Factory {
         new Container({
           components: [
             new PlaybackToggleButton(),
+            //put "next" button conditionally here
             new VolumeToggleButton(),
             new VolumeSlider(),
             new Spacer(),
@@ -395,7 +396,7 @@ export namespace UIManager.Factory {
         new RecommendationOverlay(),
         new Watermark(),
         new ErrorMessageOverlay()
-      ], cssClasses: ['ui-skin-modern']
+      ], cssClasses: ['ui-skin-egghead']
     });
   }
 
@@ -426,7 +427,7 @@ export namespace UIManager.Factory {
             }),
           ]
         })
-      ], cssClasses: ['ui-skin-modern', 'ui-skin-ads']
+      ], cssClasses: ['ui-skin-egghead', 'ui-skin-ads']
     });
   }
 
@@ -477,7 +478,7 @@ export namespace UIManager.Factory {
         new RecommendationOverlay(),
         new Watermark(),
         new ErrorMessageOverlay()
-      ], cssClasses: ['ui-skin-modern', 'ui-skin-smallscreen']
+      ], cssClasses: ['ui-skin-egghead', 'ui-skin-smallscreen']
     });
   }
 
@@ -501,7 +502,7 @@ export namespace UIManager.Factory {
           ],
           cssClass: 'ui-ads-status'
         }),
-      ], cssClasses: ['ui-skin-modern', 'ui-skin-ads', 'ui-skin-smallscreen']
+      ], cssClasses: ['ui-skin-egghead', 'ui-skin-ads', 'ui-skin-smallscreen']
     });
   }
 
@@ -528,7 +529,7 @@ export namespace UIManager.Factory {
         controlBar,
         new TitleBar({ keepHiddenWithoutMetadata: true }),
         new ErrorMessageOverlay()
-      ], cssClasses: ['ui-skin-modern', 'ui-skin-cast-receiver']
+      ], cssClasses: ['ui-skin-egghead', 'ui-skin-cast-receiver']
     });
   }
 
@@ -959,7 +960,7 @@ class PlayerWrapper {
     // on the player
     let wrapper = <any>{};
     for (let member of methods) {
-      wrapper[member] = function() {
+      wrapper[member] = function () {
         // console.log('called ' + member); // track method calls on the player
         return (<any>player)[member].apply(player, arguments);
       };

@@ -1,3 +1,9 @@
+# egghead tweaks
+https://egghead.invisionapp.com/share/YPAMOE4K3#/screens/234009818_Player_Skin
+
+
+
+
 # Bitmovin Player UI [![npm version](https://badge.fury.io/js/bitmovin-player-ui.svg)](https://badge.fury.io/js/bitmovin-player-ui)
 The Bitmovin Adaptive Streaming Player UI
 
@@ -11,7 +17,7 @@ Beside the Git repository, the UI framework is also available through the follow
 
 The UI framework and default skin bundled with the latest player release are always available via CDN. This is the recommended way if you just want to work with the predefined UI components. All components will be available in the `bitmovin.playerui` namespace.
 
- * JavaScript library: `//bitmovin-a.akamaihd.net/bitmovin-player/stable/7/bitmovinplayer-ui.js` 
+ * JavaScript library: `//bitmovin-a.akamaihd.net/bitmovin-player/stable/7/bitmovinplayer-ui.js`
  * CSS default skin: `//bitmovin-a.akamaihd.net/bitmovin-player/stable/7/bitmovinplayer-ui.css`
 
 ### NPM
@@ -33,12 +39,12 @@ The UI framework is also available in the NPM repository and comes with all sour
   * `gulp serve` to open test page in browser, build and reload changed files automatically
   * `gulp lint` to lint TypeScript and SASS files
   * `gulp build-prod` to build project with minified files into `dist` directory
-  
+
 To just take a look at the project, also run `gulp serve`. For changes, check our [change log](CHANGELOG.md).
 
 ## Introduction
 
-This repository contains the Bitmovin Player UI framework introduced with the 7.0 release. 
+This repository contains the Bitmovin Player UI framework introduced with the 7.0 release.
 It is designed as a flexible and modularized layer on the player API that replaces the old integrated monolithic UI, enabling customers and users of the player to easily customize the UI to their needs in design, structure, and functionality. It makes it extremely easy and straightforward to add additional control components and we encourage our users to proactively contribute to our codebase.
 
 The framework basically consists of a `UIManager` that handles initialization and destruction of the UI, and components extending the `Component` base class. Components provide specific functionality (e.g. `PlaybackToggleButton`, `ControlBar`, `SeekBar`, `SubtitleOverlay`) and usually consist of two files, a TypeScript `.ts` file containing control code and API interaction with the player, and a SASS `.scss` file containing the visual style.
@@ -146,12 +152,12 @@ Here is an example on how to display a special UI in fullscreen mode:
 ```js
 bitmovin.player('player-id').setup(config).then(function (player) {
   var myUiManager = new bitmovin.playerui.UIManager(player, myWindowUi);
-  
+
   player.addEventHandler(player.EVENT.ON_FULLSCREEN_ENTER, function () {
     myUiManager.release();
     myUiManager = new bitmovin.playerui.UIManager(player, myFullscreenUi);
   });
-  
+
   player.addEventHandler(player.EVENT.ON_FULLSCREEN_EXIT, function () {
     myUiManager.release();
     myUiManager = new bitmovin.playerui.UIManager(player, myWindowUi);

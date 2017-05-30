@@ -35,7 +35,8 @@ var paths = {
     html: ['./src/html/*.html'],
     tsmain: ['./src/ts/main.ts'],
     ts: ['./src/ts/**/*.ts'],
-    sass: ['./src/scss/**/*.scss']
+    sass: ['./src/scss/**/*.scss'],
+    svg: ['./assets/**/*.svg']
   },
   target: {
     html: './dist',
@@ -204,7 +205,9 @@ gulp.task('watch', function() {
   gulp.watch(paths.source.html, ['html']);
 
   // Watch SASS files
-  gulp.watch(paths.source.sass, ['sass']);
+  gulp.watch([paths.source.sass, paths.source.svg], ['sass']);
+
+  //Watch SVG fiels
 
   // Watch files for changes through Browserify with Watchify
   catchBrowserifyErrors = true;
@@ -228,7 +231,7 @@ gulp.task('serve', function() {
       }
     });
 
-    gulp.watch(paths.source.sass, ['sass']);
+    gulp.watch([paths.source.sass, paths.source.svg], ['sass']);
     gulp.watch(paths.source.html).on('change', function() { runSequence('client:html', browserSync.reload); });
     catchBrowserifyErrors = true;
     gulp.watch(paths.source.ts, ['browserify']);

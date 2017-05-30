@@ -1,20 +1,15 @@
 @import '../variables';
 @import '../mixins';
-
 .#{$prefix}-ui-volumetogglebutton {
   @extend %ui-button;
-
-  background-image: svg('assets/skin-modern/images/music-on.svg');
-
+  background-image: svg('assets/skin-egghead/images/music-on.svg');
   &:hover {
     @include svg-icon-shadow;
   }
-
   &.#{$prefix}-low {
-    background-image: svg('assets/skin-modern/images/music-low.svg');
+    background-image: svg('assets/skin-egghead/images/music-low.svg');
   }
-
   &.#{$prefix}-on {
-    background-image: svg('assets/skin-modern/images/music-off.svg');
+    background-image: svg('assets/skin-egghead/images/music-off.svg');
   }
 }
