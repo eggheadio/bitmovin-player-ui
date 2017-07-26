@@ -32,7 +32,7 @@ var merge = require('merge2');
 
 var paths = {
   source: {
-    html: ['./src/html/*.html'],
+    html: ['./src/html/*.**'],
     tsmain: ['./src/ts/main.ts'],
     ts: ['./src/ts/**/*.ts'],
     sass: ['./src/scss/**/*.scss'],
@@ -228,11 +228,12 @@ gulp.task('serve', function() {
       port: 9000,
       server: {
         baseDir: [paths.target.html]
-      }
+      },
+      noOpen: true
     });
 
     gulp.watch([paths.source.sass, paths.source.svg], ['sass']);
-    gulp.watch(paths.source.html).on('change', function() { runSequence('client:html', browserSync.reload); });
+    gulp.watch(paths.source.html).on('change', function() { runSequence('html', browserSync.reload); });
     catchBrowserifyErrors = true;
     gulp.watch(paths.source.ts, ['browserify']);
   });
