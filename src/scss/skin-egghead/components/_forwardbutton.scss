@@ -1,0 +1,9 @@
+@import '../variables';
+@import '../mixins';
+.#{$prefix}-ui-forwardbutton {
+  @extend %ui-button;
+  background-image: svg('assets/skin-egghead/images/forw-ten.svg');
+  &:hover {
+    @include svg-icon-shadow;
+  }
+}

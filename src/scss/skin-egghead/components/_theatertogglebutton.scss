@@ -1,0 +1,13 @@
+@import '../variables';
+@import '../mixins';
+.#{$prefix}-ui-theatertogglebutton {
+  @extend %ui-button;
+  min-width: 1.8em;
+  background-image: svg('assets/skin-egghead/images/theater.svg');
+  &:hover {
+    @include svg-icon-shadow;
+  }
+  &.#{$prefix}-on {
+    background-image: svg('assets/skin-egghead/images/theaterX.svg');
+  }
+}

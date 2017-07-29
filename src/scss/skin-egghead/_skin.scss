@@ -39,6 +39,11 @@
   @import 'skin-cast-receiver';
   @import 'skin-smallscreen';
   @import 'components/nextbutton';
+  @import 'components/backwardbutton';
+  @import 'components/forwardbutton';
+  @import 'components/theatertogglebutton';
+  @import 'components/speedbutton';
+
   color: $color-primary;
   font-family: $font-family;
   font-size: $font-size;

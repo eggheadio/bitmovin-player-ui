@@ -2,6 +2,7 @@
 @import '../mixins';
 .#{$prefix}-ui-fullscreentogglebutton {
   @extend %ui-button;
+  min-width: 1.8em;
   background-image: svg('assets/skin-egghead/images/fullscreen.svg');
   &:hover {
     @include svg-icon-shadow;

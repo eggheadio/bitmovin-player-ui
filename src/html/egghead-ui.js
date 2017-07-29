@@ -1,3 +1,5 @@
+//https://github.com/eggheadio/egghead-rails/blob/master/client/app/components/ReactPlayer/players/Bitmovin.js#L41
+
 const source = {
   dash: "//bitdash-a.akamaihd.net/content/sintel/sintel.mpd",
   hls: "//bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
@@ -78,7 +80,7 @@ const source = {
 }
 
 const config = {
-  key: "YOUR KEY HERE",
+  key: "56231f1a-2845-4d2e-a432-07436d3f4958",
   source,
   style: {
     ux: false
@@ -88,114 +90,8 @@ const config = {
   }
 }
 
-const {
-  UIContainer,
-  UIManager,
-  PlaybackToggleOverlay,
-  Label,
-  SettingsPanel,
-  SettingsPanelItem,
-  VideoQualitySelectBox,
-  PlaybackSpeedSelectBox,
-  AudioQualitySelectBox,
-  SubtitleSelectBox,
-  ControlBar,
-  Container,
-  PlaybackTimeLabel,
-  PlaybackTimeLabelMode,
-  SeekBar,
-  SeekBarLabel,
-  VolumeToggleButton,
-  VolumeSlider,
-  Spacer,
-  PictureInPictureToggleButton,
-  AirPlayToggleButton,
-  CastToggleButton,
-  VRToggleButton,
-  SettingsToggleButton,
-  FullscreenToggleButton,
-  SubtitleOverlay,
-  BufferingOverlay,
-  CastStatusOverlay,
-  TitleBar,
-  RecommendationOverlay,
-  Watermark,
-  ErrorMessageOverlay,
-  AudioTrackSelectBox,
-  PlaybackToggleButton,
-  NextButton
-} = bitmovin.playerui
-
-const settingsPanel = new SettingsPanel({
-  components: [
-    new SettingsPanelItem("Video Quality", new VideoQualitySelectBox()),
-    new SettingsPanelItem("Speed", new PlaybackSpeedSelectBox()),
-    new SettingsPanelItem("Audio Track", new AudioTrackSelectBox()),
-    new SettingsPanelItem("Audio Quality", new AudioQualitySelectBox()),
-    new SettingsPanelItem("Subtitles", new SubtitleSelectBox())
-  ],
-  hidden: true
-})
-
-const controlBar = new ControlBar({
-  components: [
-    settingsPanel,
-    new Container({
-      components: [
-        new PlaybackTimeLabel({
-          timeLabelMode: PlaybackTimeLabelMode.CurrentTime,
-          hideInLivePlayback: true
-        }),
-        new SeekBar({
-          label: new SeekBarLabel()
-        }),
-        new PlaybackTimeLabel({
-          timeLabelMode: PlaybackTimeLabelMode.TotalTime,
-          cssClasses: ["text-right"]
-        })
-      ],
-      cssClasses: ["controlbar-top"]
-    }),
-    new Container({
-      components: [
-        new PlaybackToggleButton(),
-        //This should only appear when on a playlist
-        new NextButton(),
-        new VolumeToggleButton(),
-        new VolumeSlider(),
-        new Spacer(),
-        new PictureInPictureToggleButton(),
-        new AirPlayToggleButton(),
-        new CastToggleButton(),
-        new VRToggleButton(),
-        new SettingsToggleButton({
-          settingsPanel
-        }),
-        new FullscreenToggleButton()
-      ],
-      cssClasses: ["controlbar-bottom"]
-    })
-  ]
-})
-
-const eggheadUI = new UIContainer({
-  components: [
-    new SubtitleOverlay(),
-    new BufferingOverlay(),
-    new PlaybackToggleOverlay(),
-    new CastStatusOverlay(),
-    controlBar,
-    new TitleBar(),
-    new RecommendationOverlay(),
-    new Watermark(),
-    new ErrorMessageOverlay()
-  ],
-  cssClasses: ["ui-skin-egghead"]
-})
-
 const player = bitmovin.player("player")
-let uiManager
 
 player.setup(config).then(function(player) {
-  let uiManager = new UIManager(player, eggheadUI)
+  const uiManager = bitmovin.playerui.UIManager.Factory.buildEggheadUI(player);
 })
