@@ -38,7 +38,7 @@ export class UIContainer extends Container<UIContainerConfig> {
 
     this.config = this.mergeConfig(config, <UIContainerConfig>{
       cssClass: 'ui-uicontainer',
-      hideDelay: 5000,
+      hideDelay: 250,
     }, this.config);
   }
 
