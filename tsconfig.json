@@ -1,9 +1,7 @@
 {
-  "files": [
-    "src/ts/main.ts"
-  ],
+  "files": ["src/ts/main.ts"],
   "compilerOptions": {
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "target": "es5",
     "declaration": true,
     "outDir": "dist/js/framework",
