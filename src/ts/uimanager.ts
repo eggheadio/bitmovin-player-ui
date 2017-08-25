@@ -16,7 +16,7 @@ import { NoArgs, EventDispatcher, CancelEventArgs } from "./eventdispatcher"
 import { SettingsToggleButton } from "./components/settingstogglebutton"
 import { SettingsPanel, SettingsPanelItem } from "./components/settingspanel"
 import { VideoQualitySelectBox } from "./components/videoqualityselectbox"
-import { Watermark } from "./components/watermark"
+// import { Watermark } from "./components/watermark"
 import { AudioQualitySelectBox } from "./components/audioqualityselectbox"
 import { AudioTrackSelectBox } from "./components/audiotrackselectbox"
 import { SeekBarLabel } from "./components/seekbarlabel"
@@ -70,9 +70,10 @@ export interface UIConfig {
   metadata?: {
     title?: string
     description?: string
-    markers?: TimelineMarker[]
+    markers?: TimelineMarker[],
   }
-  recommendations?: UIRecommendationConfig[]
+  recommendations?: UIRecommendationConfig[],
+  isPro?: boolean  
 }
 
 /**
@@ -376,57 +377,37 @@ export namespace UIManager.Factory {
     player: Player,
     config: UIConfig = {}
   ): UIManager {
-    const settingsPanel = new SettingsPanel({
-      components: [
-        new SettingsPanelItem("Video Quality", new VideoQualitySelectBox()),
-        new SettingsPanelItem("Speed", new PlaybackSpeedSelectBox()),
-        new SettingsPanelItem("Audio Track", new AudioTrackSelectBox()),
-        new SettingsPanelItem("Audio Quality", new AudioQualitySelectBox()),
-        new SettingsPanelItem("Subtitles", new SubtitleSelectBox())
-      ],
-      hidden: true
-    })
 
-    const controlBar = new ControlBar({
-      components: [
-        // settingsPanel,
-        new Container({
-          components: [
-            new PlaybackTimeLabel({
-              timeLabelMode: PlaybackTimeLabelMode.CurrentTime,
-              hideInLivePlayback: true
-            }),
-            new SeekBar({
-              label: new SeekBarLabel()
-            }),
-            new PlaybackTimeLabel({
-              timeLabelMode: PlaybackTimeLabelMode.TotalTime,
-              cssClasses: ["text-right"]
-            })
-          ],
-          cssClasses: ["controlbar-top"]
-        }),
-        new Container({
+    const container = config.isPro 
+      ? new Container({
           components: [
             new PlaybackToggleButton(),
             new VolumeToggleButton(),
             new VolumeSlider(),
             new SpeedButton(),
             new Spacer(),
-            // new PictureInPictureToggleButton(),
-            // new AirPlayToggleButton(),
-            // new CastToggleButton(),
-            // // new VRToggleButton(),
-            // new SettingsToggleButton({
-            //   settingsPanel
-            // }),
             new BackwardButton(),
             new ForwardButton(),
             new TheaterToggleButton(),
             new FullscreenToggleButton()
           ],
           cssClasses: ["controlbar-bottom"]
+        }) 
+      : new Container({
+          components: [
+            new PlaybackToggleButton(),
+            new VolumeToggleButton(),
+            new VolumeSlider(),
+            new Spacer(),
+            new TheaterToggleButton(),
+            new FullscreenToggleButton()
+          ],
+          cssClasses: ["controlbar-bottom"]
         })
+
+    const controlBar = new ControlBar({
+      components: [
+        container
       ]
     })
 
@@ -524,7 +505,7 @@ export namespace UIManager.Factory {
         controlBar,
         new TitleBar(),
         new RecommendationOverlay(),
-        new Watermark(),
+        // new Watermark(),
         new ErrorMessageOverlay()
       ],
       cssClasses: ["ui-skin-egghead"]
@@ -614,7 +595,7 @@ export namespace UIManager.Factory {
         }),
         settingsPanel,
         new RecommendationOverlay(),
-        new Watermark(),
+        // new Watermark(),
         new ErrorMessageOverlay()
       ],
       cssClasses: ["ui-skin-egghead", "ui-skin-smallscreen"]
@@ -671,7 +652,7 @@ export namespace UIManager.Factory {
         new SubtitleOverlay(),
         new BufferingOverlay(),
         new PlaybackToggleOverlay(),
-        new Watermark(),
+        // new Watermark(),
         controlBar,
         new TitleBar({ keepHiddenWithoutMetadata: true }),
         new ErrorMessageOverlay()
@@ -780,7 +761,7 @@ export namespace UIManager.Factory {
         new SubtitleOverlay(),
         new CastStatusOverlay(),
         new PlaybackToggleOverlay(),
-        new Watermark(),
+        // new Watermark(),
         new RecommendationOverlay(),
         controlBar,
         new TitleBar(),
@@ -817,7 +798,7 @@ export namespace UIManager.Factory {
       components: [
         new SubtitleOverlay(),
         new PlaybackToggleOverlay(),
-        new Watermark(),
+        // new Watermark(),
         controlBar,
         new TitleBar(),
         new ErrorMessageOverlay()
@@ -859,7 +840,7 @@ export namespace UIManager.Factory {
         new SubtitleOverlay(),
         new CastStatusOverlay(),
         new PlaybackToggleOverlay(),
-        new Watermark(),
+        // new Watermark(),
         new RecommendationOverlay(),
         controlBar,
         new TitleBar(),
@@ -933,7 +914,8 @@ export class UIInstanceManager {
     onComponentHide: new EventDispatcher<Component<ComponentConfig>, NoArgs>(),
     onControlsShow: new EventDispatcher<UIContainer, NoArgs>(),
     onPreviewControlsHide: new EventDispatcher<UIContainer, CancelEventArgs>(),
-    onControlsHide: new EventDispatcher<UIContainer, NoArgs>()
+    onControlsHide: new EventDispatcher<UIContainer, NoArgs>(),
+    onTheaterToggled: new EventDispatcher<UIContainer, NoArgs>()
   }
 
   constructor(player: Player, ui: UIContainer, config: UIConfig = {}) {
@@ -952,6 +934,14 @@ export class UIInstanceManager {
 
   getPlayer(): Player {
     return this.playerWrapper.getPlayer()
+  }
+
+  /**
+   * Fires when the UI is fully configured and added to the DOM.
+   * @returns {EventDispatcher}
+   */
+  get onTheaterToggled(): EventDispatcher<UIContainer, NoArgs> {
+    return this.events.onTheaterToggled
   }
 
   /**

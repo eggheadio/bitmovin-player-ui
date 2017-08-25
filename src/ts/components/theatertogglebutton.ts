@@ -1,10 +1,12 @@
 import {ToggleButton, ToggleButtonConfig} from './togglebutton';
 import {UIInstanceManager} from '../uimanager';
 
-/**
- * A button that toggles the player between windowed and fullscreen view.
- */
+
+
+
+
 export class TheaterToggleButton extends ToggleButton<ToggleButtonConfig> {
+  static THEATER_TOGGLE:bitmovin.player.EVENT = "THEATER_TOGGLE"  
 
   constructor(config: ToggleButtonConfig = {}) {
     super(config);
@@ -18,26 +20,8 @@ export class TheaterToggleButton extends ToggleButton<ToggleButtonConfig> {
   configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
-    let fullscreenStateHandler = () => {
-      if (player.isFullscreen()) {
-        this.on();
-      } else {
-        this.off();
-      }
-    };
-
-    player.addEventHandler(player.EVENT.ON_FULLSCREEN_ENTER, fullscreenStateHandler);
-    player.addEventHandler(player.EVENT.ON_FULLSCREEN_EXIT, fullscreenStateHandler);
-
     this.onClick.subscribe(() => {
-      if (player.isFullscreen()) {
-        player.exitFullscreen();
-      } else {
-        player.enterFullscreen();
-      }
+      uimanager.onTheaterToggled.dispatch(uimanager.getUI())
     });
-
-    // Startup init
-    fullscreenStateHandler();
   }
 }

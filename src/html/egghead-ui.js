@@ -93,5 +93,9 @@ const config = {
 const player = bitmovin.player("player")
 
 player.setup(config).then(function(player) {
-  const uiManager = bitmovin.playerui.UIManager.Factory.buildEggheadUI(player);
+  const uiManager = bitmovin.playerui.UIManager.Factory.buildEggheadUI(player, {isPro: false});
+
+  uiManager.currentUi.onTheaterToggled.subscribe(()=>{
+    console.log('what...')
+  })
 })
