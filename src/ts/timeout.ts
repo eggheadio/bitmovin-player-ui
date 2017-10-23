@@ -7,7 +7,7 @@ export class Timeout {
   private delay: number;
   private callback: () => void;
   private repeat: boolean;
-  private timeoutHandle: number;
+  private timeoutHandle: any;
 
   /**
    * Creates a new timeout callback handler.
