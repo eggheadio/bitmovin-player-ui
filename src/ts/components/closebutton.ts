@@ -22,11 +22,11 @@ export class CloseButton extends Button<CloseButtonConfig> {
 
     this.config = this.mergeConfig(config, {
       cssClass: 'ui-closebutton',
-      text: 'Close'
+      text: 'Close',
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
     let config = <CloseButtonConfig>this.getConfig();

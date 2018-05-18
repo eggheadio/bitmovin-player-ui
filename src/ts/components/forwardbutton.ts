@@ -11,7 +11,7 @@ export class ForwardButton extends Button<ButtonConfig>{
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     this.onClick.subscribe(()=>{
       player.seek(player.getCurrentTime() + 30)
     })

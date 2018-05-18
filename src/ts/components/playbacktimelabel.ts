@@ -1,7 +1,8 @@
 import {LabelConfig, Label} from './label';
 import {UIInstanceManager} from '../uimanager';
-import {StringUtils, PlayerUtils} from '../utils';
 import LiveStreamDetectorEventArgs = PlayerUtils.LiveStreamDetectorEventArgs;
+import {PlayerUtils} from '../playerutils';
+import {StringUtils} from '../stringutils';
 
 export enum PlaybackTimeLabelMode {
   CurrentTime,
@@ -32,7 +33,7 @@ export class PlaybackTimeLabel extends Label<PlaybackTimeLabelConfig> {
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
     let config = <PlaybackTimeLabelConfig>this.getConfig();
@@ -66,18 +67,31 @@ export class PlaybackTimeLabel extends Label<PlaybackTimeLabelConfig> {
       }
     };
 
-    new PlayerUtils.LiveStreamDetector(player).onLiveChanged.subscribe((sender, args: LiveStreamDetectorEventArgs) => {
-      live = args.live;
-      updateLiveState();
-    });
-
     let updateLiveTimeshiftState = () => {
-      if (player.getTimeShift() === 0) {
+      if (!live) {
+        return;
+      }
+
+      // The player is only at the live edge iff the stream is not shifted and it is actually playing or playback has
+      // never been started (meaning it isn't paused). A player that is paused is always behind the live edge.
+      // An exception is made for live streams without a timeshift window, because here we "stop" playback instead
+      // of pausing it (from a UI perspective), so we keep the live edge indicator on because a play would always
+      // resume at the live edge.
+      const isTimeshifted = player.getTimeShift() < 0;
+      const isTimeshiftAvailable = player.getMaxTimeShift() < 0;
+      if (!isTimeshifted && (!player.isPaused() || !isTimeshiftAvailable)) {
         this.getDomElement().addClass(liveEdgeCssClass);
       } else {
         this.getDomElement().removeClass(liveEdgeCssClass);
       }
     };
+
+    let liveStreamDetector = new PlayerUtils.LiveStreamDetector(player);
+    liveStreamDetector.onLiveChanged.subscribe((sender, args: LiveStreamDetectorEventArgs) => {
+      live = args.live;
+      updateLiveState();
+    });
+    liveStreamDetector.detect(); // Initial detection
 
     let playbackTimeHandler = () => {
       if (!live && player.getDuration() !== Infinity) {
@@ -90,7 +104,7 @@ export class PlaybackTimeLabel extends Label<PlaybackTimeLabelConfig> {
       if (width > minWidth) {
         minWidth = width;
         this.getDomElement().css({
-          'min-width': minWidth + 'px'
+          'min-width': minWidth + 'px',
         });
       }
     };
@@ -101,13 +115,15 @@ export class PlaybackTimeLabel extends Label<PlaybackTimeLabelConfig> {
 
     player.addEventHandler(player.EVENT.ON_TIME_SHIFT, updateLiveTimeshiftState);
     player.addEventHandler(player.EVENT.ON_TIME_SHIFTED, updateLiveTimeshiftState);
+    player.addEventHandler(player.EVENT.ON_PLAY, updateLiveTimeshiftState);
+    player.addEventHandler(player.EVENT.ON_PAUSED, updateLiveTimeshiftState);
 
     let init = () => {
       // Reset min-width when a new source is ready (especially for switching VOD/Live modes where the label content
       // changes)
       minWidth = 0;
       this.getDomElement().css({
-        'min-width': null
+        'min-width': null,
       });
 
       // Set time format depending on source duration
@@ -142,5 +158,13 @@ export class PlaybackTimeLabel extends Label<PlaybackTimeLabelConfig> {
         this.setText(`${currentTime} / ${totalTime}`);
         break;
     }
+  }
+
+  /**
+   * Sets the current time format
+   * @param timeFormat the time format
+   */
+  protected setTimeFormat(timeFormat: string): void {
+    this.timeFormat = timeFormat;
   }
 }

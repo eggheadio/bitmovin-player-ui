@@ -17,7 +17,7 @@ export class SpeedButton extends Button<ButtonConfig>{
 
   }
 
-    configure(player: bitmovin.player.Player, uimanager: UIInstanceManager, handleClickEvent: boolean = true): void {
+    configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager, handleClickEvent: boolean = true): void {
       super.configure(player, uimanager);
 
       const speeds = [1.0, 1.25, 1.5, 2.0]

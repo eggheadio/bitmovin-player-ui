@@ -6,7 +6,7 @@ import {UIInstanceManager} from '../uimanager';
 
 
 export class TheaterToggleButton extends ToggleButton<ToggleButtonConfig> {
-  static THEATER_TOGGLE:bitmovin.player.EVENT = "THEATER_TOGGLE"  
+  static THEATER_TOGGLE:bitmovin.PlayerAPI.EVENT = "THEATER_TOGGLE"  
 
   constructor(config: ToggleButtonConfig = {}) {
     super(config);
@@ -17,7 +17,7 @@ export class TheaterToggleButton extends ToggleButton<ToggleButtonConfig> {
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
     this.onClick.subscribe(() => {
