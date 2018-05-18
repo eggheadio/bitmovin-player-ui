@@ -11,7 +11,7 @@ import {PlaybackTimeLabel, PlaybackTimeLabelMode} from './components/playbacktim
 import {ControlBar} from './components/controlbar';
 import {NoArgs, EventDispatcher, CancelEventArgs} from './eventdispatcher';
 import {SettingsToggleButton} from './components/settingstogglebutton';
-import {SettingsPanel, SettingsPanelItem} from './components/settingspanel';
+import {SettingsPanel, SettingsPanelItem, SettingsPanelConfig} from './components/settingspanel';
 import {SubtitleSettingsPanel} from './components/subtitlesettings/subtitlesettingspanel';
 import {SubtitleSettingsLabel} from './components/subtitlesettings/subtitlesettingslabel';
 import {SubtitleSettingsOpenButton} from './components/subtitlesettings/subtitlesettingsopenbutton';
@@ -52,9 +52,7 @@ import {BackwardButton} from "./components/backwardbutton"
 import {ForwardButton} from "./components/forwardbutton"
 import {TheaterToggleButton} from "./components/theatertogglebutton"
 import {SpeedButton} from './components/speedbutton'
-import {UIUtils} from './uiutils';
-import {ArrayUtils} from './arrayutils';
-import {BrowserUtils} from './browserutils';
+import { ArrayUtils, UIUtils, BrowserUtils } from "./utils"
 
 export interface UIRecommendationConfig {
   title: string;
@@ -408,8 +406,23 @@ export namespace UIManager.Factory {
     player: PlayerAPI,
     config: UIConfig = {}
   ): UIManager {
+    let subtitleOverlay = new SubtitleOverlay();
 
-    const container = config.isPro 
+    let settingsPanel = new SettingsPanel({
+      components: [
+        new SettingsPanelItem('Video Quality', new VideoQualitySelectBox()),
+        new SettingsPanelItem('Audio Quality', new AudioQualitySelectBox()),
+      ],
+      hidden: true,
+    });
+
+    settingsPanel.addComponent(
+      new SettingsPanelItem(
+        "Subtitles",
+        new SubtitleSelectBox()
+    ));
+
+    const videoSettingsAndControls = config.isPro 
       ? new Container({
           components: [
             new PlaybackToggleButton(),
@@ -419,8 +432,9 @@ export namespace UIManager.Factory {
             new Spacer(),
             new BackwardButton(),
             new ForwardButton(),
-            new TheaterToggleButton(),
-            new FullscreenToggleButton()
+            //new TheaterToggleButton(),
+            new FullscreenToggleButton(),
+            new SettingsToggleButton({ settingsPanel: settingsPanel }),
           ],
           cssClasses: ["controlbar-bottom"]
         }) 
@@ -430,15 +444,26 @@ export namespace UIManager.Factory {
             new VolumeToggleButton(),
             new VolumeSlider(),
             new Spacer(),
-            new TheaterToggleButton(),
-            new FullscreenToggleButton()
+            new CastToggleButton(),
+            new SettingsToggleButton({ settingsPanel: settingsPanel }),
+            new FullscreenToggleButton(),
           ],
           cssClasses: ["controlbar-bottom"]
         })
 
+    const seekbar = new Container({
+      components:[
+        new PlaybackTimeLabel({ timeLabelMode: PlaybackTimeLabelMode.CurrentTime, hideInLivePlayback: true }),
+        new SeekBar({ label: new SeekBarLabel() }),
+        new PlaybackTimeLabel({ timeLabelMode: PlaybackTimeLabelMode.TotalTime, cssClasses: ['text-right'] }),
+      ]
+    })
+
     const controlBar = new ControlBar({
       components: [
-        container
+        settingsPanel,
+        seekbar,
+        videoSettingsAndControls
       ]
     })
 
@@ -460,7 +485,7 @@ export namespace UIManager.Factory {
   }
 
   export function buildDefaultUI(player: PlayerAPI, config: UIConfig = {}): UIManager {
-    return UIManager.Factory.buildDefaultUI(player, config);
+    return UIManager.Factory.buildEggheadUI(player, config);
   }
 
   export function buildDefaultSmallScreenUI(player: PlayerAPI, config: UIConfig = {}): UIManager {
@@ -477,7 +502,7 @@ export namespace UIManager.Factory {
     let settingsPanel = new SettingsPanel({
       components: [
         new SettingsPanelItem('Video Quality', new VideoQualitySelectBox()),
-        //new SettingsPanelItem('Speed', new PlaybackSpeedSelectBox()),
+        new SettingsPanelItem('Speed', new PlaybackSpeedSelectBox()),
         new SettingsPanelItem('Audio Track', new AudioTrackSelectBox()),
         new SettingsPanelItem('Audio Quality', new AudioQualitySelectBox()),
       ],
@@ -540,10 +565,10 @@ export namespace UIManager.Factory {
         controlBar,
         new TitleBar(),
         new RecommendationOverlay(),
-        //new Watermark(),
+        new Watermark(),
         new ErrorMessageOverlay(),
       ],
-      cssClasses: ['ui-skin-egghead'],
+      cssClasses: ['ui-skin-modern'],
     });
   }
 
@@ -593,26 +618,7 @@ export namespace UIManager.Factory {
       hideDelay: -1,
     });
 
-    let subtitleSettingsPanel = new SubtitleSettingsPanel({
-      hidden: true,
-      hideDelay: -1,
-      overlay: subtitleOverlay,
-      settingsPanel: settingsPanel,
-    });
-
-    let subtitleSettingsOpenButton = new SubtitleSettingsOpenButton({
-      subtitleSettingsPanel: subtitleSettingsPanel,
-      settingsPanel: settingsPanel,
-    });
-
-    settingsPanel.addComponent(
-      new SettingsPanelItem(
-        new SubtitleSettingsLabel({text: 'Subtitles', opener: subtitleSettingsOpenButton}),
-        new SubtitleSelectBox()
-    ));
-
     settingsPanel.addComponent(new CloseButton({ target: settingsPanel }));
-    subtitleSettingsPanel.addComponent(new CloseButton({ target: subtitleSettingsPanel }));
 
     let controlBar = new ControlBar({
       components: [
@@ -645,7 +651,6 @@ export namespace UIManager.Factory {
           ],
         }),
         settingsPanel,
-        subtitleSettingsPanel,
         new RecommendationOverlay(),
         //new Watermark(),
         new ErrorMessageOverlay(),
