@@ -1,7 +1,7 @@
 import {ToggleButton, ToggleButtonConfig} from './togglebutton';
 import {UIInstanceManager} from '../uimanager';
-import PlayerEvent = bitmovin.player.PlayerEvent;
-import {PlayerUtils} from '../utils';
+import PlayerEvent = bitmovin.PlayerAPI.PlayerEvent;
+import {PlayerUtils} from '../playerutils';
 import TimeShiftAvailabilityChangedArgs = PlayerUtils.TimeShiftAvailabilityChangedArgs;
 
 /**
@@ -16,11 +16,11 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
 
     this.config = this.mergeConfig(config, {
       cssClass: 'ui-playbacktogglebutton',
-      text: 'Play/Pause'
+      text: 'Play/Pause',
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager, handleClickEvent: boolean = true): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager, handleClickEvent: boolean = true): void {
     super.configure(player, uimanager);
 
     let isSeeking = false;
@@ -43,6 +43,13 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
     // Call handler upon these events
     player.addEventHandler(player.EVENT.ON_PLAY, playbackStateHandler);
     player.addEventHandler(player.EVENT.ON_PAUSED, playbackStateHandler);
+    if (player.EVENT.ON_PLAYING) {
+      // Since player 7.3. Not really necessary but just in case we ever miss the ON_PLAY event.
+      player.addEventHandler(player.EVENT.ON_PLAYING, playbackStateHandler);
+    }
+    // after unloading + loading a new source, the player might be in a different playing state (from playing into stopped)
+    player.addEventHandler(player.EVENT.ON_SOURCE_LOADED, playbackStateHandler);
+    player.addEventHandler(player.EVENT.ON_SOURCE_UNLOADED, playbackStateHandler);
     // when playback finishes, player turns to paused mode
     player.addEventHandler(player.EVENT.ON_PLAYBACK_FINISHED, playbackStateHandler);
     player.addEventHandler(player.EVENT.ON_CAST_STARTED, playbackStateHandler);
@@ -51,7 +58,8 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
     player.addEventHandler(player.EVENT.ON_CAST_PLAYBACK_FINISHED, playbackStateHandler);
 
     // Detect absence of timeshifting on live streams and add tagging class to convert button icons to play/stop
-    new PlayerUtils.TimeShiftAvailabilityDetector(player).onTimeShiftAvailabilityChanged.subscribe(
+    let timeShiftDetector = new PlayerUtils.TimeShiftAvailabilityDetector(player);
+    timeShiftDetector.onTimeShiftAvailabilityChanged.subscribe(
       (sender, args: TimeShiftAvailabilityChangedArgs) => {
         if (!args.timeShiftAvailable) {
           this.getDomElement().addClass(this.prefixCss(PlaybackToggleButton.CLASS_STOPTOGGLE));
@@ -60,6 +68,7 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
         }
       }
     );
+    timeShiftDetector.detect(); // Initial detection
 
     if (handleClickEvent) {
       // Control player by button events
@@ -67,9 +76,9 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
       // above that updated the button state.
       this.onClick.subscribe(() => {
         if (player.isPlaying()) {
-          player.pause('ui-button');
+          player.pause('ui');
         } else {
-          player.play('ui-button');
+          player.play('ui');
         }
       });
     }

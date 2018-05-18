@@ -1,12 +1,13 @@
 {
-  "files": ["src/ts/main.ts"],
+  "files": [
+    "src/ts/main.ts"
+  ],
   "compilerOptions": {
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "target": "es5",
     "declaration": true,
     "outDir": "dist/js/framework",
     "lib": ["es6", "dom", "scripthost"],
-    "sourceMap": true,
-    "mapRoot": "dist"
+    "skipLibCheck": true
   }
 }

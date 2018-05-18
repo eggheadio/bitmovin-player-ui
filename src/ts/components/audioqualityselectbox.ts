@@ -11,8 +11,20 @@ export class AudioQualitySelectBox extends SelectBox {
     super(config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
+
+    let selectCurrentAudioQuality = () => {
+      if (player.getAudioQuality) {
+        // Since player 7.3.1
+        this.selectItem(player.getAudioQuality().id);
+      } else {
+        // Backwards compatibility for players <= 7.3.0
+        // TODO remove in next major release
+        let data = player.getDownloadedAudioData();
+        this.selectItem(data.isAuto ? 'auto' : data.id);
+      }
+    };
 
     let updateAudioQualities = () => {
       let audioQualities = player.getAvailableAudioQualities();
@@ -26,6 +38,9 @@ export class AudioQualitySelectBox extends SelectBox {
       for (let audioQuality of audioQualities) {
         this.addItem(audioQuality.id, audioQuality.label);
       }
+
+      // Select initial quality
+      selectCurrentAudioQuality();
     };
 
     this.onItemSelected.subscribe((sender: AudioQualitySelectBox, value: string) => {
@@ -38,13 +53,16 @@ export class AudioQualitySelectBox extends SelectBox {
     player.addEventHandler(player.EVENT.ON_SOURCE_UNLOADED, updateAudioQualities);
     // Update qualities when a new source is loaded
     player.addEventHandler(player.EVENT.ON_READY, updateAudioQualities);
+    // Update qualities when the period within a source changes
+    player.addEventHandler(player.EVENT.ON_PERIOD_SWITCHED, updateAudioQualities);
     // Update quality selection when quality is changed (from outside)
-    player.addEventHandler(player.EVENT.ON_AUDIO_DOWNLOAD_QUALITY_CHANGE, () => {
-      let data = player.getDownloadedAudioData();
-      this.selectItem(data.isAuto ? 'auto' : data.id);
-    });
-
-    // Populate qualities at startup
-    updateAudioQualities();
+    if (player.EVENT.ON_AUDIO_QUALITY_CHANGED) {
+      // Since player 7.3.1
+      player.addEventHandler(player.EVENT.ON_AUDIO_QUALITY_CHANGED, selectCurrentAudioQuality);
+    } else {
+      // Backwards compatibility for players <= 7.3.0
+      // TODO remove in next major release
+      player.addEventHandler(player.EVENT.ON_AUDIO_DOWNLOAD_QUALITY_CHANGE, selectCurrentAudioQuality);
+    }
   }
 }

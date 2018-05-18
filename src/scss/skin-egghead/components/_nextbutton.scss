@@ -1,9 +1,0 @@
-@import '../variables';
-@import '../mixins';
-.#{$prefix}-ui-nextbutton {
-  @extend %ui-button;
-  background-image: svg('assets/skin-egghead/images/next.svg');
-  &:hover {
-    @include svg-icon-shadow;
-  }
-}

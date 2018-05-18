@@ -11,12 +11,18 @@ export class PictureInPictureToggleButton extends ToggleButton<ToggleButtonConfi
 
     this.config = this.mergeConfig(config, {
       cssClass: 'ui-piptogglebutton',
-      text: 'Picture-in-Picture'
+      text: 'Picture-in-Picture',
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
+
+    if (!player.isPictureInPictureAvailable) {
+      // If the player does not support PIP (player 7.0), we just hide this component and skip configuration
+      this.hide();
+      return;
+    }
 
     this.onClick.subscribe(() => {
       if (player.isPictureInPictureAvailable()) {
