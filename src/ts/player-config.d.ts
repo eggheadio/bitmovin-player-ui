@@ -1,6 +1,6 @@
 declare namespace bitmovin {
 
-  namespace player {
+  namespace PlayerAPI {
 
     interface ProgressiveSourceConfig {
       /**
@@ -283,30 +283,34 @@ declare namespace bitmovin {
       licenseResponseType?: string;
     }
 
-    interface VRViewingWindowConfig {
+    interface VRControlConfig {
       /**
-       * Specifies how low the user can look. Valid values are from -90 to 90 (default: -90).
+       * Specifies the transition timing that shall be used for this control.
        */
-      minYaw: number;
+      transitionTimingType?: VR.TransitionTimingType;
       /**
-       * Specifies how high the user can look. Valid values are from -90 to 90 (default: 90).
+       * The time that a transition should take.
        */
-      maxYaw: number;
+      transitionTime?: number;
       /**
-       * Specifies how far left the user can look. Valid values are from 0 to 360 (default: 0).
+       * The maximum displacement speed in degrees per second. Default values are 90°/s for keyboard controls, and Infinity
+       * for mouse and API controls.
        */
-      minPitch: number;
+      maxDisplacementSpeed?: number;
+    }
+
+    interface VRKeyboardControlConfig extends VRControlConfig {
       /**
-       * Specifies how far right the user can look. Valid values are from 0 to 360 (default: 360).
+       * Specifies which keys should be used for the keyboard control.
        */
-      maxPitch: number;
+      keyMap?: VR.KeyMap;
     }
 
     interface VRConfig {
       /**
        * Specifies the type of the VR/360 content.
        */
-      contentType: VR.CONTENT_TYPE;
+      contentType: VR.ContentType;
       /**
        * Specifies if the video should start in stereo mode (true) or not (false, default).
        */
@@ -316,19 +320,62 @@ declare namespace bitmovin {
        */
       startPosition?: number;
       /**
-       * Set to true, an automatic rotation across the entire video will be executed.
-       */
-      initialRotation?: boolean;
-      /**
-       * Specifies the automatic rotation speed of the projection, if initialRotation is active.
-       */
-      initialRotationRate?: number;
-      /**
        * Specifies the angles the user can view around within the VR/360 video.
        * Per default, the user has no limitations.
        */
-      viewingWindow?: VRViewingWindowConfig;
+      viewingWindow?: VR.ViewingWindow;
+      /**
+       * Specifies whether the restricted inline playback shall be used or not.
+       */
+      restrictedInlinePlayback?: boolean;
+      /**
+       * Specifies whether performance measurements shall be enabled or not.
+       */
+      enableFrameRateMeasurements?: boolean;
+      /**
+       * Specifies the cardboard config.
+       */
+      cardboard?: string;
+      /**
+       * The threshold in degrees that the viewport can change before the ON_VR_VIEWING_DIRECTION_CHANGE event is
+       * triggered.
+       */
+      viewingDirectionChangeThreshold?: number;
+      /**
+       * The minimal interval between consecutive ON_VR_VIEWING_DIRECTION_CHANGE events.
+       */
+      viewingDirectionChangeEventInterval?: number;
+      /**
+       * The keyboard control config.
+       */
+      keyboardControl?: VRKeyboardControlConfig;
+      /**
+       * The mouse control config.
+       */
+      mouseControl?: VRControlConfig;
+      /**
+       * The api control config.
+       */
+      apiControl?: VRControlConfig;
+    }
 
+    interface SourceLabelingConfig {
+      /**
+       * A function that generates a label for a track, usually an audio track.
+       * @param track Object with metadata about the track for which the label should be generated. The id field is
+       *   populated when used for HLS, the mimeType when used for DASH.
+       */
+      tracks?: (track: { id?: string, mimeType?: string, lang: string }) => string;
+      /**
+       * A function that generates a label for a quality, usually a video quality.
+       * @param quality Object with metadata about the quality for which the label should be generated.
+       */
+      qualities?: (quality: { id: string, mimeType: string, bitrate: number, width: number, height: number, qualityRanking?: number, frameRate?: number }) => string;
+      /**
+       * A function that generates a label for a subtitle.
+       * @param subtitle The subtitle for which the label should be generated.
+       */
+      subtitles?: (subtitle: Subtitle) => string;
     }
 
     interface SourceConfig {
@@ -343,6 +390,11 @@ declare namespace bitmovin {
        * HLS content can easily and for free be generated using our encoding solution bitcodin.
        */
       hls?: string;
+      /**
+       * An URL to a Microsoft Smooth Streaming Manifest (normally ends with .ism/Manifest but can also be a .xml)
+       * @since 7.5
+       */
+      smooth?: string;
       /**
        * An Array of objects to video files, used for progressive download as fallback. Is only used when all
        * other methods fail. Multiple progressive files can be used, e.g. .mp4 and .webm files to support as
@@ -379,6 +431,19 @@ declare namespace bitmovin {
        * The description of the video source.
        */
       description?: string;
+      /**
+       * An object with callback functions that provide labels for audio tracks, qualities and subtitle tracks.
+       */
+      labeling?: {
+        /**
+         * Labeling functions for DASH sources.
+         */
+        dash?: SourceLabelingConfig;
+        /**
+         * Labeling functions for HLS sources.
+         */
+        hls?: SourceLabelingConfig;
+      };
     }
 
     interface PlaybackTech {
@@ -445,42 +510,10 @@ declare namespace bitmovin {
        */
       aspectratio?: string;
       /**
-       * Whether controls are displayed or not. If no controls are displayed, this JavaScript API can be
-       * used to control the player. Can be true (default) or false.
-       */
-      controls?: boolean;
-      /**
-       * Can be used to disable auto-hiding the controls by setting this value to false. Default is true.
-       */
-      autoHideControls?: boolean;
-      /**
-       * Can be used to disable (i.e. never show) the overlay in pause or stopped mode by setting this
-       * value to false. Default is true.
-       */
-      playOverlay?: boolean;
-      /**
-       * Can be used to disable all keyboard commands by setting this value to false. Default is true.
-       */
-      keyboard?: boolean;
-      /**
-       * Can be used to disable click (toggle play/pause) and double click (toggle fullscreen) mouse events
-       * by setting this value to false. Default is true.
-       */
-      mouse?: boolean;
-      /**
        * A short hand function to disable/enable controls, playOverlay, subtitles, keyboard,
        * and mouse. It is not possible to override this setting with one of the mentioned attributes.
        */
       ux?: boolean;
-      /**
-       * If set to true, active subtitles won’t be displayed, but still exposed in the onCueEnter and
-       * onCueExit events.
-       */
-      subtitlesHidden?: boolean;
-      /**
-       * Can be used enable/disable visible error messages. Default is true (enabled).
-       */
-      showErrors?: boolean;
     }
 
     interface ContextMenuEntry {
@@ -533,6 +566,12 @@ declare namespace bitmovin {
        * used as parameter name and the values as parameter values.
        */
       query_parameters?: { [key: string]: string; };
+      /**
+       * If enabled the native player used for HLS in Safari would fetch and parse the HLS playlist and trigger
+       * onSegmentPlayback events carrying segment-specific metadata like EXT-X-PROGRAM-DATE-TIME if present
+       * in the manifest.
+       */
+      native_hls_parsing?: boolean;
     }
 
     interface CastConfig {
@@ -552,13 +591,6 @@ declare namespace bitmovin {
        * to use this option! This is only needed if one wants to create a custom ChromeCast receiver app.
        */
       message_namespace?: string;
-    }
-
-    interface AdaptationBitrateConfig {
-      minSelectableAudioBitrate?: number | string;
-      maxSelectableAudioBitrate?: number | string;
-      minSelectableVideoBitrate?: number | string;
-      maxSelectableVideoBitrate?: number | string;
     }
 
     interface AdaptationConfig {
@@ -582,12 +614,49 @@ declare namespace bitmovin {
        * This behavior can be disabled by setting this option to false (default is true).
        */
       disableDownloadCancelling?: boolean;
-      desktop?: {
-        bitrates: AdaptationBitrateConfig
+      /**
+       * Specifies whether the player preloads the content or not. Can be true (default) or false.
+       */
+      preload?: boolean;
+      /**
+       * Lower and upper bitrate boundaries. Values should generally be strings with mbps (megabits per second), kbps
+       * (kilobits per second), or bps (bits per second) units (e.g. '5000kbps'). Only the values 0 (no limitation for
+       * lower boundaries) and Infinity (no limitation for upper boundaries) are not required to be strings.
+       */
+      bitrates?: {
+        minSelectableAudioBitrate?: number | string;
+        maxSelectableAudioBitrate?: number | string;
+        minSelectableVideoBitrate?: number | string;
+        maxSelectableVideoBitrate?: number | string;
       };
-      mobile?: {
-        bitrates: AdaptationBitrateConfig
-      };
+      /**
+       * A callback function to customize the player's adaptation logic that is called before the player tries to download
+       * a new video segment.
+       * @param data An object carrying the <code>suggested</code> attribute, holding the suggested representation/quality
+       *   ID the player would select
+       * @return A valid representation/quality ID which the player should use, based on your custom logic (or
+       *   <code>data.suggested</code> to switch to the suggested quality)
+       * @see PlayerAPI#getAvailableVideoQualities to get a list of all available video qualities
+       */
+      onVideoAdaptation?: (data: { suggested: string }) => string;
+      /**
+       * A callback function to customize the player's adaptation logic that is called before the player tries to download
+       * a new audio segment.
+       * @param data An object carrying the <code>suggested</code> attribute, holding the suggested representation/quality
+       *   ID the player would select
+       * @return A valid representation/quality ID which the player should use, based on your custom logic (or
+       *   <code>data.suggested</code> to switch to the suggested quality)
+       * @see PlayerAPI#getAvailableAudioQualities to get a list of all available audio qualities
+       */
+      onAudioAdaptation?: (data: { suggested: string }) => string;
+    }
+
+    /**
+     * Adaptation configurations for different platforms.
+     */
+    interface AdaptationPlatformConfig {
+      desktop?: AdaptationConfig;
+      mobile?: AdaptationConfig;
     }
 
     interface AdvertisingScheduleItem {
@@ -652,6 +721,12 @@ declare namespace bitmovin {
        * an offset and a tag property.
        */
       schedule?: { [name: string]: AdvertisingScheduleItem; };
+      /**
+       * If set to true, mid-roll ads are only played during normal playback. Seeking to a time after the
+       * mid-roll ads doesn't trigger ad playback.
+       * @since 7.1
+       */
+      allowSeekingOverMidRollAds?: boolean;
     }
 
     interface LocationConfig {
@@ -696,6 +771,131 @@ declare namespace bitmovin {
       delay?: number;
     }
 
+    /**
+     * Values the `HttpRequestType` property can have in the network API config callbacks.
+     */
+    enum HttpRequestType {
+      MANIFEST_DASH,
+      MANIFEST_HLS_MASTER,
+      MANIFEST_HLS_VARIANT,
+      MANIFEST_SMOOTH,
+      MANIFEST_ADS,
+
+      MEDIA_AUDIO,
+      MEDIA_VIDEO,
+      MEDIA_SUBTITLES,
+      MEDIA_THUMBNAILS,
+
+      DRM_LICENSE_WIDEVINE,
+      DRM_LICENSE_PLAYREADY,
+      DRM_LICENSE_FAIRPLAY,
+      DRM_LICENSE_PRIMETIME,
+      DRM_LICENSE_CLEARKEY,
+
+      DRM_CERTIFICATE_FAIRPLAY,
+
+      KEY_HLS_AES,
+    }
+
+    enum HttpResponseType {
+      ARRAYBUFFER,
+      BLOB,
+      DOCUMENT,
+      JSON,
+      TEXT,
+    }
+
+    /**
+     * Allowed types of the {@link HttpRequest.body}
+     */
+    type HttpRequestBody = ArrayBuffer | ArrayBufferView | Blob | FormData | string | Document | URLSearchParams;
+
+    /**
+     * Possible types of {@link HttpResponse.body}
+     */
+    type HttpResponseBody = string | ArrayBuffer | Blob | Object | Document;
+
+    /**
+     * Allowed HTTP request method
+     */
+    enum HttpRequestMethod {
+      GET,
+      POST,
+      HEAD,
+    }
+
+    interface HttpRequest {
+      /**
+       * HTTP method of the request
+       */
+      method: HttpRequestMethod;
+      /**
+       * URL of the request
+       */
+      url: string;
+      /**
+       * Headers of this request
+       */
+      headers: Header[];
+      /**
+       * Request body to send to the server (optional).
+       */
+      body?: HttpRequestBody;
+      /**
+       * Type we expect the {@link HttpResponse.body} to be.
+       */
+      responseType: HttpResponseType;
+      /**
+       * The credentials property as used in the `fetch` API and mapped to the `XmlHttpRequest` as follows:
+       * <pre>
+       * 'include' ... withCredentials = true
+       * 'omit'    ... withCredentials = false
+       * </pre>
+       */
+      credentials: 'omit' | 'same-origin' | 'include';
+    }
+
+    interface HttpResponse<ResponseBody extends HttpResponseBody> {
+      /**
+       * Corresponding request object of this response
+       */
+      request: HttpRequest;
+      /**
+       * URL of the actual request. May differ from {@link HttpRequest.url} when redirects have happened.
+       */
+      url: string;
+      /**
+       * Headers of the response.
+       */
+      headers: Header[];
+      /**
+       * HTTP status code
+       */
+      status: number;
+      /**
+       * Status text provided by the server or default value if not present in response.
+       */
+      statusText: string;
+      /**
+       * Body of the response with type defined by {@link HttpRequest.responseType} (optional).
+       */
+      body?: ResponseBody;
+      /**
+       * Amount of bytes of the response body (optional).
+       */
+      length?: number;
+    }
+
+    interface NetworkConfig {
+      preprocessHttpRequest?: (type: HttpRequestType, request: HttpRequest) => Promise<HttpRequest>;
+      sendHttpRequest?: <T extends HttpResponseBody>(type: HttpRequestType, request: HttpRequest) =>
+        Promise<HttpResponse<T>>;
+      retryHttpRequest?: <T extends HttpResponseBody>(type: HttpRequestType, response: HttpResponse<T>, retry: number) =>
+        Promise<HttpRequest>;
+      preprocessHttpResponse?: <T extends HttpResponseBody>(type: HttpRequestType, response: HttpResponse<T>) =>
+        Promise<HttpResponse<T>>;
+    }
+
     interface Config {
       /**
        * Mandatory. A personal key can be found in the bitmovin portal and should be specified here as string.
@@ -727,12 +927,9 @@ declare namespace bitmovin {
        */
       cast?: CastConfig;
       /**
-       * The adaptation logic can be influenced by this parameter. Lower and upper bitrate boundaries can be
-       * set for desktop and mobile separately. Only representations between minSelectableVideoBitrate
-       * (or minSelectableAudioBitrate) and maxSelectableVideoBitrate (or maxSelectableAudioBitrate) are chosen
-       * except there are no matching representations.
+       * Configures the adaptation logic.
        */
-      adaptation?: AdaptationConfig;
+      adaptation?: AdaptationPlatformConfig;
       /**
        * Allows you to define which ads you want to display and when you want to display them.
        * In order to play ads on your website, you need to specify an ad config.
@@ -751,6 +948,10 @@ declare namespace bitmovin {
        * Licensing configuration.
        */
       licensing?: LicensingConfig;
+      /**
+       * Network configuration.
+       */
+      network?: NetworkConfig;
     }
   }
 }

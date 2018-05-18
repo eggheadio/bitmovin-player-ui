@@ -34,11 +34,11 @@ export class MetadataLabel extends Label<MetadataLabelConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
-      cssClasses: ['label-metadata', 'label-metadata-' + MetadataLabelContent[config.content].toLowerCase()]
+      cssClasses: ['label-metadata', 'label-metadata-' + MetadataLabelContent[config.content].toLowerCase()],
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
     let config = <MetadataLabelConfig>this.getConfig();

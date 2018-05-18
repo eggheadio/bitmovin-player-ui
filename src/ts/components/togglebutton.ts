@@ -1,10 +1,19 @@
 import {Button, ButtonConfig} from './button';
 import {NoArgs, EventDispatcher, Event} from '../eventdispatcher';
+import { UIInstanceManager } from '../uimanager';
 
 /**
  * Configuration interface for a toggle button component.
  */
 export interface ToggleButtonConfig extends ButtonConfig {
+  /**
+   * The CSS class that marks the on-state of the button.
+   */
+  onClass?: string;
+  /**
+   * The CSS class that marks the off-state of the button.
+   */
+  offClass?: string;
   /**
    * The text on the button.
    */
@@ -16,23 +25,29 @@ export interface ToggleButtonConfig extends ButtonConfig {
  */
 export class ToggleButton<Config extends ToggleButtonConfig> extends Button<ToggleButtonConfig> {
 
-  private static readonly CLASS_ON = 'on';
-  private static readonly CLASS_OFF = 'off';
-
   private onState: boolean;
 
   private toggleButtonEvents = {
     onToggle: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
     onToggleOn: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
-    onToggleOff: new EventDispatcher<ToggleButton<Config>, NoArgs>()
+    onToggleOff: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
   };
 
   constructor(config: ToggleButtonConfig) {
     super(config);
 
-    this.config = this.mergeConfig(config, {
-      cssClass: 'ui-togglebutton'
-    }, this.config);
+    const defaultConfig: ToggleButtonConfig = {
+      cssClass: 'ui-togglebutton',
+      onClass: 'on',
+      offClass: 'off',
+    };
+
+    this.config = this.mergeConfig(config, defaultConfig, this.config);
+  }
+
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
+    const config = this.getConfig() as ToggleButtonConfig;
+    this.getDomElement().addClass(this.prefixCss(config.offClass));
   }
 
   /**
@@ -40,9 +55,11 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    */
   on() {
     if (this.isOff()) {
+      const config = this.getConfig() as ToggleButtonConfig;
+
       this.onState = true;
-      this.getDomElement().removeClass(this.prefixCss(ToggleButton.CLASS_OFF));
-      this.getDomElement().addClass(this.prefixCss(ToggleButton.CLASS_ON));
+      this.getDomElement().removeClass(this.prefixCss(config.offClass));
+      this.getDomElement().addClass(this.prefixCss(config.onClass));
 
       this.onToggleEvent();
       this.onToggleOnEvent();
@@ -54,9 +71,11 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    */
   off() {
     if (this.isOn()) {
+      const config = this.getConfig() as ToggleButtonConfig;
+
       this.onState = false;
-      this.getDomElement().removeClass(this.prefixCss(ToggleButton.CLASS_ON));
-      this.getDomElement().addClass(this.prefixCss(ToggleButton.CLASS_OFF));
+      this.getDomElement().removeClass(this.prefixCss(config.onClass));
+      this.getDomElement().addClass(this.prefixCss(config.offClass));
 
       this.onToggleEvent();
       this.onToggleOffEvent();

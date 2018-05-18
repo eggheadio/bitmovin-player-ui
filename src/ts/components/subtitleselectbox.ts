@@ -1,9 +1,6 @@
 import {SelectBox} from './selectbox';
 import {ListSelectorConfig} from './listselector';
 import {UIInstanceManager} from '../uimanager';
-import SubtitleAddedEvent = bitmovin.player.SubtitleAddedEvent;
-import SubtitleChangedEvent = bitmovin.player.SubtitleChangedEvent;
-import SubtitleRemovedEvent = bitmovin.player.SubtitleRemovedEvent;
 
 /**
  * A select box providing a selection between available subtitle and caption tracks.
@@ -14,8 +11,16 @@ export class SubtitleSelectBox extends SelectBox {
     super(config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
+
+    let selectCurrentSubtitle = () => {
+      let currentSubtitle = player.getSubtitle();
+
+      if (currentSubtitle) {
+        this.selectItem(currentSubtitle.id);
+      }
+    };
 
     let updateSubtitles = () => {
       this.clearItems();
@@ -23,6 +28,9 @@ export class SubtitleSelectBox extends SelectBox {
       for (let subtitle of player.getAvailableSubtitles()) {
         this.addItem(subtitle.id, subtitle.label);
       }
+
+      // Select the correct subtitle after the subtitles have been added
+      selectCurrentSubtitle();
     };
 
     this.onItemSelected.subscribe((sender: SubtitleSelectBox, value: string) => {
@@ -30,20 +38,15 @@ export class SubtitleSelectBox extends SelectBox {
     });
 
     // React to API events
-    player.addEventHandler(player.EVENT.ON_SUBTITLE_ADDED, (event: SubtitleAddedEvent) => {
-      this.addItem(event.subtitle.id, event.subtitle.label);
-    });
-    player.addEventHandler(player.EVENT.ON_SUBTITLE_CHANGED, (event: SubtitleChangedEvent) => {
-      this.selectItem(event.targetSubtitle.id);
-    });
-    player.addEventHandler(player.EVENT.ON_SUBTITLE_REMOVED, (event: SubtitleRemovedEvent) => {
-      this.removeItem(event.subtitleId);
-    });
-
+    player.addEventHandler(player.EVENT.ON_SUBTITLE_ADDED, updateSubtitles);
+    player.addEventHandler(player.EVENT.ON_SUBTITLE_CHANGED, selectCurrentSubtitle);
+    player.addEventHandler(player.EVENT.ON_SUBTITLE_REMOVED, updateSubtitles);
     // Update subtitles when source goes away
     player.addEventHandler(player.EVENT.ON_SOURCE_UNLOADED, updateSubtitles);
     // Update subtitles when a new source is loaded
     player.addEventHandler(player.EVENT.ON_READY, updateSubtitles);
+    // Update subtitles when the period within a source changes
+    player.addEventHandler(player.EVENT.ON_PERIOD_SWITCHED, updateSubtitles);
 
     // Populate subtitles at startup
     updateSubtitles();

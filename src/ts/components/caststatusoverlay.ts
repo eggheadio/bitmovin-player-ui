@@ -1,8 +1,8 @@
 import {ContainerConfig, Container} from './container';
 import {Label, LabelConfig} from './label';
 import {UIInstanceManager} from '../uimanager';
-import CastWaitingForDeviceEvent = bitmovin.player.CastWaitingForDeviceEvent;
-import CastStartedEvent = bitmovin.player.CastStartedEvent;
+import CastWaitingForDeviceEvent = bitmovin.PlayerAPI.CastWaitingForDeviceEvent;
+import CastStartedEvent = bitmovin.PlayerAPI.CastStartedEvent;
 
 /**
  * Overlays the player and displays the status of a Cast session.
@@ -19,11 +19,11 @@ export class CastStatusOverlay extends Container<ContainerConfig> {
     this.config = this.mergeConfig(config, {
       cssClass: 'ui-cast-status-overlay',
       components: [this.statusLabel],
-      hidden: true
+      hidden: true,
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
 
     player.addEventHandler(player.EVENT.ON_CAST_WAITING_FOR_DEVICE,

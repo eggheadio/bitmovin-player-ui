@@ -11,6 +11,7 @@ var rename = require('gulp-rename');
 var tslint = require('gulp-tslint');
 var sassLint = require('gulp-sass-lint');
 var ts = require('gulp-typescript');
+var replace = require('gulp-replace');
 
 // PostCSS plugins
 var postcssSVG = require('postcss-svg');
@@ -29,73 +30,62 @@ var del = require('del');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync');
 var merge = require('merge2');
+var nativeTslint = require('tslint');
+var npmPackage = require('./package.json');
+var path = require('path');
+var combine = require('stream-combiner2');
 
 var paths = {
   source: {
-    html: ['./src/html/*.**'],
+    html: ['./src/html/*.html'],
     tsmain: ['./src/ts/main.ts'],
     ts: ['./src/ts/**/*.ts'],
-    sass: ['./src/scss/**/*.scss'],
-    svg: ['./assets/**/*.svg']
+    sass: ['./src/scss/**/*.scss']
   },
   target: {
     html: './dist',
     js: './dist/js',
     jsframework: './dist/js/framework',
+    jsmain: 'bitmovinplayer-ui.js',
     css: './dist/css'
   }
 };
+
+var replacements = [
+  ['{{VERSION}}', npmPackage.version],
+];
 
 var browserifyInstance = browserify({
   basedir: '.',
   debug: true,
   entries: paths.source.tsmain,
   cache: {},
-  packageCache: {}
+  packageCache: {},
+  standalone: 'bitmovin.playerui',
 }).plugin(tsify);
 
 var catchBrowserifyErrors = false;
 var production = false;
 
+function replaceAll() {
+  var replacementStreams = replacements.map(function(replacement) { return replace(replacement[0], replacement[1]); });
+  return combine.apply(this, replacementStreams);
+}
+
 // Deletes the target directory containing all generated files
-gulp.task('clean', del.bind(null, [paths.target.html]));
+gulp.task('clean', function() {
+  return del([paths.target.html]);
+});
 
 // TypeScript linting
 gulp.task('lint-ts', function() {
+  // The program is required for type checking rules to work: https://palantir.github.io/tslint/usage/type-checking/
+  var program = nativeTslint.Linter.createProgram("./tsconfig.json");
+
   return gulp.src(paths.source.ts)
   .pipe(tslint({
     formatter: 'verbose',
-    configuration: {
-      rules: {
-        'class-name': true,
-        'comment-format': [true, 'check-space'],
-        'indent': [true, 'spaces'],
-        'no-duplicate-variable': true,
-        'no-eval': true,
-        'no-internal-module': true,
-        'no-trailing-whitespace': true,
-        'no-var-keyword': false,
-        'one-line': [true, 'check-open-brace', 'check-whitespace'],
-        'quotemark': [true, 'single'],
-        'semicolon': false,
-        'triple-equals': [true, 'allow-null-check'],
-        'typedef-whitespace': [true, {
-          'call-signature': 'nospace',
-          'index-signature': 'nospace',
-          'parameter': 'nospace',
-          'property-declaration': 'nospace',
-          'variable-declaration': 'nospace'
-        }],
-        'variable-name': [true, 'ban-keywords'],
-        'whitespace': [true,
-          'check-branch',
-          'check-decl',
-          'check-operator',
-          'check-separator',
-          'check-type'
-        ]
-      }
-    }
+    program: program,
   }))
   .pipe(tslint.report({
     // Print just the number of errors (instead of printing all errors again)
@@ -140,8 +130,9 @@ gulp.task('browserify', function() {
 
   // Compile output JS file
   var stream = browserifyBundle
-  .pipe(source('bitmovinplayer-ui.js'))
-  .pipe(buffer())
+  .pipe(source(paths.target.jsmain))
+  .pipe(replaceAll())
+  .pipe(buffer()) // required for production/sourcemaps
   .pipe(gulp.dest(paths.target.js));
 
   if (production) {
@@ -153,14 +144,21 @@ gulp.task('browserify', function() {
     .pipe(gulp.dest(paths.target.js));
   }
 
-  stream.pipe(browserSync.reload({stream: true}));
+  return stream.pipe(browserSync.reload({stream: true}));
 });
 
 // Compiles SASS stylesheets to CSS stylesheets in the target directory, adds autoprefixes and creates sourcemaps
 gulp.task('sass', function() {
   var stream = gulp.src(paths.source.sass)
   .pipe(sourcemaps.init())
-  .pipe(sass().on('error', sass.logError))
+  .pipe(sass({
+    includePaths: [
+      // Includes node_modules of the current module
+      path.join(__dirname, 'node_modules'),
+      // Includes node_modules of the current module, or, if used as a dependency in a supermodule where this
+      // gulpfile is reused, includes node_modules of the supermodule
+      './node_modules'],
+  }).on('error', sass.logError))
   .pipe(postcss([
     autoprefixer({browsers: ['> 1%', 'last 2 versions', 'Firefox ESR']}),
     postcssSVG()
@@ -180,7 +178,7 @@ gulp.task('sass', function() {
     .pipe(gulp.dest(paths.target.css));
   }
 
-  stream.pipe(browserSync.reload({stream: true}));
+  return stream.pipe(browserSync.reload({stream: true}));
 });
 
 // Builds the complete project from the sources into the target directory
@@ -205,9 +203,7 @@ gulp.task('watch', function() {
   gulp.watch(paths.source.html, ['html']);
 
   // Watch SASS files
-  gulp.watch([paths.source.sass, paths.source.svg], ['sass']);
-
-  //Watch SVG fiels
+  gulp.watch(paths.source.sass, ['sass']);
 
   // Watch files for changes through Browserify with Watchify
   catchBrowserifyErrors = true;
@@ -228,11 +224,10 @@ gulp.task('serve', function() {
       port: 9000,
       server: {
         baseDir: [paths.target.html]
-      },
-      noOpen: true
+      }
     });
 
-    gulp.watch([paths.source.sass, paths.source.svg], ['sass']);
+    gulp.watch(paths.source.sass, ['sass']);
     gulp.watch(paths.source.html).on('change', function() { runSequence('html', browserSync.reload); });
     catchBrowserifyErrors = true;
     gulp.watch(paths.source.ts, ['browserify']);
@@ -248,6 +243,10 @@ gulp.task('npm-prepare', ['build-prod'], function() {
 
   return merge([
     tsResult.dts.pipe(gulp.dest(paths.target.jsframework)),
-    tsResult.js.pipe(gulp.dest(paths.target.jsframework))
+    tsResult.js.pipe(replaceAll()).pipe(gulp.dest(paths.target.jsframework))
   ]);
 });
+
+// Export the paths object to allow customization (e.g. js output filename) from other gulpfiles that import
+// and reuse the tasks from here.
+module.exports.paths = paths;
