@@ -82,8 +82,9 @@ const source = {
 const config = {
   key: "56231f1a-2845-4d2e-a432-07436d3f4958",
   source,
-  style: {
-    ux: false
+  location: {
+    ui: 'js/bitmovinplayer-ui.js',
+    ui_css: 'css/bitmovinplayer-ui.css'
   },
   cast: {
     enable: true
@@ -94,8 +95,4 @@ const player = bitmovin.player("player")
 
 player.setup(config).then(function(player) {
   const uiManager = bitmovin.playerui.UIManager.Factory.buildEggheadUI(player, {isPro: false});
-
-  uiManager.currentUi.onTheaterToggled.subscribe(()=>{
-    console.log('what...')
-  })
 })

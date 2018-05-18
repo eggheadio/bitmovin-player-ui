@@ -2,7 +2,8 @@ import {ToggleButtonConfig} from './togglebutton';
 import {PlaybackToggleButton} from './playbacktogglebutton';
 import {DOM} from '../dom';
 import {UIInstanceManager} from '../uimanager';
-import PlayerEvent = bitmovin.player.PlayerEvent;
+import PlayerEvent = bitmovin.PlayerAPI.PlayerEvent;
+import WarningEvent = bitmovin.PlayerAPI.WarningEvent;
 
 /**
  * A button that overlays the video and toggles between playback and pause.
@@ -14,19 +15,19 @@ export class HugePlaybackToggleButton extends PlaybackToggleButton {
 
     this.config = this.mergeConfig(config, {
       cssClass: 'ui-hugeplaybacktogglebutton',
-      text: 'Play/Pause'
+      text: 'Play/Pause',
     }, this.config);
   }
 
-  configure(player: bitmovin.player.Player, uimanager: UIInstanceManager): void {
+  configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     // Update button state through API events
     super.configure(player, uimanager, false);
 
     let togglePlayback = () => {
       if (player.isPlaying()) {
-        player.pause('ui-overlay');
+        player.pause('ui');
       } else {
-        player.play('ui-overlay');
+        player.play('ui');
       }
     };
 
@@ -102,6 +103,14 @@ export class HugePlaybackToggleButton extends PlaybackToggleButton {
       firstPlay = false;
     });
 
+    player.addEventHandler(player.EVENT.ON_WARNING, (event: WarningEvent) => {
+      // 5008 == Playback could not be started
+      if (event.code === 5008) {
+        // if playback could not be started, reset the first play flag as we need the user interaction to start
+        firstPlay = true;
+      }
+    });
+
     // Hide button while initializing a Cast session
     let castInitializationHandler = (event: PlayerEvent) => {
       if (event.type === player.EVENT.ON_CAST_START) {
@@ -125,7 +134,7 @@ export class HugePlaybackToggleButton extends PlaybackToggleButton {
     // can cover the whole video player are and scaling would extend it beyond. By adding an inner element, confined
     // to the size if the image, it can scale inside the player without overshooting.
     buttonElement.append(new DOM('div', {
-      'class': this.prefixCss('image')
+      'class': this.prefixCss('image'),
     }));
 
     return buttonElement;
