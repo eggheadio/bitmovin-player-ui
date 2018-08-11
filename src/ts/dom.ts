@@ -3,6 +3,10 @@ export interface Offset {
   top: number;
 }
 
+export interface CssProperties {
+  [propertyName: string]: string;
+}
+
 /**
  * Simple DOM manipulation and DOM element event handling modeled after jQuery (as replacement for jQuery).
  *
@@ -425,7 +429,12 @@ export class DOM {
   addClass(className: string): DOM {
     this.forEach((element) => {
       if (element.classList) {
-        element.classList.add(className);
+        const classNames = className.split(' ')
+          .filter(className => className.length > 0);
+
+        if (classNames.length > 0) {
+          element.classList.add(...classNames);
+        }
       }
       else {
         element.className += ' ' + className;
@@ -443,7 +452,12 @@ export class DOM {
   removeClass(className: string): DOM {
     this.forEach((element) => {
       if (element.classList) {
-        element.classList.remove(className);
+        const classNames = className.split(' ')
+          .filter(className => className.length > 0);
+
+        if (classNames.length > 0) {
+          element.classList.remove(...classNames);
+        }
       }
       else {
         element.className = element.className.replace(
@@ -496,8 +510,8 @@ export class DOM {
    * Sets a collection of CSS properties and their values on all elements.
    * @param propertyValueCollection an object containing pairs of property names and their values
    */
-  css(propertyValueCollection: {[propertyName: string]: string}): DOM;
-  css(propertyNameOrCollection: string | {[propertyName: string]: string}, value?: string): string | null | DOM {
+  css(propertyValueCollection: CssProperties): DOM;
+  css(propertyNameOrCollection: string | CssProperties, value?: string): string | null | DOM {
     if (typeof propertyNameOrCollection === 'string') {
       let propertyName = propertyNameOrCollection;
 

@@ -7,6 +7,8 @@ import {VideoQualitySelectBox} from './videoqualityselectbox';
 import {AudioQualitySelectBox} from './audioqualityselectbox';
 import {Timeout} from '../timeout';
 import {Event, EventDispatcher, NoArgs} from '../eventdispatcher';
+import {ListBox} from './listbox';
+import {PlaybackSpeedSelectBox} from './playbackspeedselectbox';
 
 /**
  * Configuration interface for a {@link SettingsPanel}.
@@ -47,9 +49,12 @@ export class SettingsPanel extends Container<SettingsPanelConfig> {
 
     let config = <SettingsPanelConfig>this.getConfig(); // TODO fix generics type inference
 
+    uimanager.onControlsHide.subscribe(() => this.hideHoveredSelectBoxes());
+
     if (config.hideDelay > -1) {
       this.hideTimeout = new Timeout(config.hideDelay, () => {
         this.hide();
+        this.hideHoveredSelectBoxes();
       });
 
       this.onShow.subscribe(() => {
@@ -89,6 +94,30 @@ export class SettingsPanel extends Container<SettingsPanelConfig> {
     for (let component of this.getItems()) {
       component.onActiveChanged.subscribe(settingsStateChangedHandler);
     }
+  }
+
+  /**
+   * Hack for IE + Firefox
+   * when the settings panel fades out while an item of a select box is still hovered, the select box will not fade out
+   * while the settings panel does. This would leave a floating select box, which is just weird
+   */
+  private hideHoveredSelectBoxes(): void {
+    this.getItems().forEach((item: SettingsPanelItem) => {
+      if (item.isActive() && (item as any).setting instanceof SelectBox) {
+        const selectBox = (item as any).setting as SelectBox;
+        const oldDisplay = selectBox.getDomElement().css('display');
+        // updating the display to none marks the select-box as inactive, so it will be hidden with the rest
+        // we just have to make sure to reset this as soon as possible
+        selectBox.getDomElement().css('display', 'none');
+        if (window.requestAnimationFrame) {
+          requestAnimationFrame(() => { selectBox.getDomElement().css('display', oldDisplay); });
+        } else {
+          // IE9 has no requestAnimationFrame, set the value directly. It has no optimization about ignoring DOM-changes
+          // between animationFrames
+          selectBox.getDomElement().css('display', oldDisplay);
+        }
+      }
+    });
   }
 
   release(): void {
@@ -166,9 +195,9 @@ export class SettingsPanelItem extends Container<ContainerConfig> {
   }
 
   configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
-    if (this.setting instanceof SelectBox) {
+    if (this.setting instanceof SelectBox || this.setting instanceof ListBox) {
       let handleConfigItemChanged = () => {
-        if (! (this.setting instanceof SelectBox)) {
+        if (!(this.setting instanceof SelectBox) && !(this.setting instanceof ListBox)) {
           return;
         }
         // The minimum number of items that must be available for the setting to be displayed
@@ -181,8 +210,12 @@ export class SettingsPanelItem extends Container<ContainerConfig> {
           minItemsToDisplay = 3;
         }
 
-        // Hide the setting if no meaningful choice is available
         if (this.setting.itemCount() < minItemsToDisplay) {
+          // Hide the setting if no meaningful choice is available
+          this.hide();
+        } else if (this.setting instanceof PlaybackSpeedSelectBox
+          && !uimanager.getConfig().playbackSpeedSelectionEnabled) {
+          // Hide the PlaybackSpeedSelectBox if disabled in config
           this.hide();
         } else {
           this.show();

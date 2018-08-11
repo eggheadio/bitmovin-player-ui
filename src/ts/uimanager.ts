@@ -6,7 +6,7 @@ import {PlaybackToggleButton} from './components/playbacktogglebutton';
 import {FullscreenToggleButton} from './components/fullscreentogglebutton';
 import {VRToggleButton} from './components/vrtogglebutton';
 import {VolumeToggleButton} from './components/volumetogglebutton';
-import {SeekBar} from './components/seekbar';
+import { SeekBar, SeekBarMarker } from './components/seekbar';
 import {PlaybackTimeLabel, PlaybackTimeLabelMode} from './components/playbacktimelabel';
 import {ControlBar} from './components/controlbar';
 import {NoArgs, EventDispatcher, CancelEventArgs} from './eventdispatcher';
@@ -50,6 +50,7 @@ import {Spacer} from './components/spacer';
 import {UIUtils} from './uiutils';
 import {ArrayUtils} from './arrayutils';
 import {BrowserUtils} from './browserutils';
+import { PlayerUtils } from './playerutils';
 
 export interface UIRecommendationConfig {
   title: string;
@@ -58,9 +59,34 @@ export interface UIRecommendationConfig {
   duration?: number;
 }
 
+/**
+ * Marks a position on the playback timeline, e.g. a chapter or an ad break.
+ */
 export interface TimelineMarker {
+  /**
+   * The time in the playback timeline (e.g. {@link SeekBar}) that should be marked.
+   */
   time: number;
+  /**
+   * Optional duration that makes the marker mark an interval instead of a single moment in time.
+   */
+  duration?: number;
+  /**
+   * Optional title text of the marked position, e.g. a chapter name.
+   * Will be rendered in the {@link SeekBarLabel} attached to a {@link SeekBar}.
+   */
   title?: string;
+  /**
+   * Optional CSS classes that are applied to the marker on a {@link SeekBar} and can be used to
+   * differentiate different types of markers by their style (e.g. different color of chapter markers
+   * and ad break markers).
+   * The CSS classes are also propagated to a connected {@link SeekBarLabel}.
+   *
+   * Multiple classes can be added to allow grouping of markers into types (e.g. chapter markers,
+   * ad break markers) by a shared class and still identify and style each marker with distinct
+   * classes (e.g. `['marker-type-chapter', 'chapter-number-1']`).
+   */
+  cssClasses?: string[];
 }
 
 export interface UIConfig {
@@ -74,7 +100,29 @@ export interface UIConfig {
     description?: string;
     markers?: TimelineMarker[];
   };
+  // TODO move recommendations into metadata in next major release
   recommendations?: UIRecommendationConfig[];
+  /**
+   * Specifies if the UI variants should be resolved and switched automatically upon certain player events. The default
+   * is `true`. Should be set to `false` if purely manual switching through {@link UIManager.resolveUiVariant} is
+   * desired. A hybrid approach can be used by setting this to `true` (or leaving the default) and overriding
+   * automatic switches through a {@link UIManager.onUiVariantResolve} event handler.
+   */
+  autoUiVariantResolve?: boolean;
+  /**
+   * Specifies if the `PlaybackSpeedSelectBox` should be displayed within the `SettingsPanel`
+   * Default: false
+   */
+  playbackSpeedSelectionEnabled?: boolean;
+}
+
+export interface InternalUIConfig extends UIConfig {
+  events: {
+    /**
+     * Fires when the configuration has been updated/changed.
+     */
+    onUpdated: EventDispatcher<UIManager, void>;
+  };
 }
 
 /**
@@ -141,8 +189,12 @@ export class UIManager {
   private uiVariants: UIVariant[];
   private uiInstanceManagers: InternalUIInstanceManager[];
   private currentUi: InternalUIInstanceManager;
-  private config: UIConfig;
+  private config: InternalUIConfig;
   private managerPlayerWrapper: PlayerWrapper;
+
+  private events = {
+    onUiVariantResolve: new EventDispatcher<UIManager, UIConditionContext>(),
+  };
 
   /**
    * Creates a UI manager with a single UI variant that will be permanently shown.
@@ -169,19 +221,7 @@ export class UIManager {
     if (playerUiOrUiVariants instanceof UIContainer) {
       // Single-UI constructor has been called, transform arguments to UIVariant[] signature
       let playerUi = <UIContainer>playerUiOrUiVariants;
-      let adsUi = null;
-
       let uiVariants = [];
-
-      // Add the ads UI if defined
-      if (adsUi) {
-        uiVariants.push({
-          ui: adsUi,
-          condition: (context: UIConditionContext) => {
-            return context.isAdWithUI;
-          },
-        });
-      }
 
       // Add the default player UI
       uiVariants.push({ ui: playerUi });
@@ -194,8 +234,52 @@ export class UIManager {
     }
 
     this.player = player;
-    this.config = config;
+    this.config = {
+      ...config,
+      events: {
+        onUpdated: new EventDispatcher<UIManager, void>(),
+      },
+    };
     this.managerPlayerWrapper = new PlayerWrapper(player);
+
+    /**
+     * Gathers configuration data from the UI config and player source config and creates a merged UI config
+     * that is used throughout the UI instance.
+     */
+    const updateConfig = () => {
+      const playerSourceConfig = player.getConfig().source || {};
+
+      const uiConfig = { ...config };
+      uiConfig.metadata = uiConfig.metadata || {};
+
+      // Extract the UI-related config properties from the source config
+      const playerSourceUiConfig: UIConfig = {
+        metadata: {
+          // TODO move metadata into source.metadata namespace in player v8
+          title: playerSourceConfig.title,
+          description: playerSourceConfig.description,
+          markers: playerSourceConfig.markers,
+        },
+        recommendations: playerSourceConfig.recommendations,
+      };
+
+      // Player source config takes precedence over the UI config, because the config in the source is attached
+      // to a source which changes with every player.load, whereas the UI config stays the same for the whole
+      // lifetime of the player instance.
+      this.config.metadata = this.config.metadata || {};
+      this.config.metadata.title = playerSourceUiConfig.metadata.title || uiConfig.metadata.title;
+      this.config.metadata.description = playerSourceUiConfig.metadata.description || uiConfig.metadata.description;
+      this.config.metadata.markers = playerSourceUiConfig.metadata.markers || uiConfig.metadata.markers || [];
+      this.config.recommendations = playerSourceUiConfig.recommendations || uiConfig.recommendations || [];
+    };
+
+    updateConfig();
+
+    // Update the configuration when a new source is loaded
+    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_SOURCE_LOADED, () => {
+      updateConfig();
+      this.config.events.onUpdated.dispatch(this);
+    });
 
     if (config.container) {
       // Unfortunately "uiContainerElement = new DOM(config.container)" will not accept the container with
@@ -233,8 +317,12 @@ export class UIManager {
       throw Error('Invalid UI variant order: the default UI (without condition) must be at the end of the list');
     }
 
+    // Switch on auto UI resolving by default
+    if (config.autoUiVariantResolve === undefined) {
+      config.autoUiVariantResolve = true;
+    }
+
     let adStartedEvent: AdStartedEvent = null; // keep the event stored here during ad playback
-    let isMobile = BrowserUtils.isMobile;
 
     // Dynamically select a UI variant that matches the current UI condition.
     let resolveUiVariant = (event: PlayerEvent) => {
@@ -269,84 +357,39 @@ export class UIManager {
       let ad = adStartedEvent != null;
       let adWithUI = ad && adStartedEvent.clientType === 'vast';
 
-      // Determine the current context for which the UI variant will be resolved
-      let context: UIConditionContext = {
+      this.resolveUiVariant({
         isAd: ad,
         isAdWithUI: adWithUI,
         adClientType: ad ? adStartedEvent.clientType : null,
-        isFullscreen: this.player.isFullscreen(),
-        isMobile: isMobile,
-        isPlaying: this.player.isPlaying(),
-        width: this.uiContainerElement.width(),
-        documentWidth: document.body.clientWidth,
-      };
-
-      let nextUi: InternalUIInstanceManager = null;
-      let uiVariantChanged = false;
-
-      // Select new UI variant
-      // If no variant condition is fulfilled, we switch to *no* UI
-      for (let uiVariant of this.uiVariants) {
-        if (uiVariant.condition == null || uiVariant.condition(context) === true) {
-          nextUi = this.uiInstanceManagers[this.uiVariants.indexOf(uiVariant)];
-          break;
+      }, (context) => {
+        // If this is an ad UI, we need to relay the saved ON_AD_STARTED event data so ad components can configure
+        // themselves for the current ad.
+        if (context.isAd) {
+          /* Relay the ON_AD_STARTED event to the ads UI
+           *
+           * Because the ads UI is initialized in the ON_AD_STARTED handler, i.e. when the ON_AD_STARTED event has
+           * already been fired, components in the ads UI that listen for the ON_AD_STARTED event never receive it.
+           * Since this can break functionality of components that rely on this event, we relay the event to the
+           * ads UI components with the following call.
+           */
+          this.currentUi.getWrappedPlayer().fireEventInUI(this.player.EVENT.ON_AD_STARTED, adStartedEvent);
         }
-      }
-
-      // Determine if the UI variant is changing
-      if (nextUi !== this.currentUi) {
-        uiVariantChanged = true;
-        // console.log('switched from ', this.currentUi ? this.currentUi.getUI() : 'none',
-        //   ' to ', nextUi ? nextUi.getUI() : 'none');
-      }
-
-      // Only if the UI variant is changing, we need to do some stuff. Else we just leave everything as-is.
-      if (uiVariantChanged) {
-        // Hide the currently active UI variant
-        if (this.currentUi) {
-          this.currentUi.getUI().hide();
-        }
-
-        // Assign the new UI variant as current UI
-        this.currentUi = nextUi;
-
-        // When we switch to a different UI instance, there's some additional stuff to manage. If we do not switch
-        // to an instance, we're done here.
-        if (this.currentUi != null) {
-          // Add the UI to the DOM (and configure it) the first time it is selected
-          if (!this.currentUi.isConfigured()) {
-            this.addUi(this.currentUi);
-          }
-
-          // If this is an ad UI, we need to relay the saved ON_AD_STARTED event data so ad components can configure
-          // themselves for the current ad.
-          if (context.isAd) {
-            /* Relay the ON_AD_STARTED event to the ads UI
-             *
-             * Because the ads UI is initialized in the ON_AD_STARTED handler, i.e. when the ON_AD_STARTED event has
-             * already been fired, components in the ads UI that listen for the ON_AD_STARTED event never receive it.
-             * Since this can break functionality of components that rely on this event, we relay the event to the
-             * ads UI components with the following call.
-             */
-            this.currentUi.getWrappedPlayer().fireEventInUI(this.player.EVENT.ON_AD_STARTED, adStartedEvent);
-          }
-
-          this.currentUi.getUI().show();
-        }
-      }
+      });
     };
 
     // Listen to the following events to trigger UI variant resolution
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_READY, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PLAY, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PAUSED, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_STARTED, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_FINISHED, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_SKIPPED, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_ERROR, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PLAYER_RESIZE, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_FULLSCREEN_ENTER, resolveUiVariant);
-    this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_FULLSCREEN_EXIT, resolveUiVariant);
+    if (config.autoUiVariantResolve) {
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_READY, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PLAY, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PAUSED, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_STARTED, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_FINISHED, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_SKIPPED, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_AD_ERROR, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_PLAYER_RESIZE, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_FULLSCREEN_ENTER, resolveUiVariant);
+      this.managerPlayerWrapper.getPlayer().addEventHandler(this.player.EVENT.ON_FULLSCREEN_EXIT, resolveUiVariant);
+    }
 
     // Initialize the UI
     resolveUiVariant(null);
@@ -354,6 +397,104 @@ export class UIManager {
 
   getConfig(): UIConfig {
     return this.config;
+  }
+
+  /**
+   * Returns the list of UI variants as passed into the constructor of {@link UIManager}.
+   * @returns {UIVariant[]} the list of available UI variants
+   */
+  getUiVariants(): UIVariant[] {
+    return this.uiVariants;
+  }
+
+  /**
+   * Switches to a UI variant from the list returned by {@link getUiVariants}.
+   * @param {UIVariant} uiVariant the UI variant to switch to
+   * @param {() => void} onShow a callback that is executed just before the new UI variant is shown
+   */
+  switchToUiVariant(uiVariant: UIVariant, onShow?: () => void): void {
+    let uiVariantIndex = this.uiVariants.indexOf(uiVariant);
+
+    const nextUi: InternalUIInstanceManager = this.uiInstanceManagers[uiVariantIndex];
+    let uiVariantChanged = false;
+
+    // Determine if the UI variant is changing
+    if (nextUi !== this.currentUi) {
+      uiVariantChanged = true;
+      // console.log('switched from ', this.currentUi ? this.currentUi.getUI() : 'none',
+      //   ' to ', nextUi ? nextUi.getUI() : 'none');
+    }
+
+    // Only if the UI variant is changing, we need to do some stuff. Else we just leave everything as-is.
+    if (uiVariantChanged) {
+      // Hide the currently active UI variant
+      if (this.currentUi) {
+        this.currentUi.getUI().hide();
+      }
+
+      // Assign the new UI variant as current UI
+      this.currentUi = nextUi;
+
+      // When we switch to a different UI instance, there's some additional stuff to manage. If we do not switch
+      // to an instance, we're done here.
+      if (this.currentUi != null) {
+        // Add the UI to the DOM (and configure it) the first time it is selected
+        if (!this.currentUi.isConfigured()) {
+          this.addUi(this.currentUi);
+        }
+
+        if (onShow) {
+          onShow();
+        }
+
+        this.currentUi.getUI().show();
+      }
+    }
+  }
+
+  /**
+   * Triggers a UI variant switch as triggered by events when automatic switching is enabled. It allows to overwrite
+   * properties of the {@link UIConditionContext}.
+   * @param {Partial<UIConditionContext>} context an optional set of properties that overwrite properties of the
+   *   automatically determined context
+   * @param {(context: UIConditionContext) => void} onShow a callback that is executed just before the new UI variant
+   *   is shown (if a switch is happening)
+   */
+  resolveUiVariant(context: Partial<UIConditionContext> = {}, onShow?: (context: UIConditionContext) => void): void {
+    // Determine the current context for which the UI variant will be resolved
+    const defaultContext: UIConditionContext = {
+      isAd: false,
+      isAdWithUI: false,
+      adClientType: null,
+      isFullscreen: this.player.isFullscreen(),
+      isMobile: BrowserUtils.isMobile,
+      isPlaying: this.player.isPlaying(),
+      width: this.uiContainerElement.width(),
+      documentWidth: document.body.clientWidth,
+    };
+
+    // Overwrite properties of the default context with passed in context properties
+    const switchingContext = { ...defaultContext, ...context };
+
+    // Fire the event and allow modification of the context before it is used to resolve the UI variant
+    this.events.onUiVariantResolve.dispatch(this, switchingContext);
+
+    let nextUiVariant: UIVariant = null;
+
+    // Select new UI variant
+    // If no variant condition is fulfilled, we switch to *no* UI
+    for (let uiVariant of this.uiVariants) {
+      if (uiVariant.condition == null || uiVariant.condition(switchingContext) === true) {
+        nextUiVariant = uiVariant;
+        break;
+      }
+    }
+
+    this.switchToUiVariant(nextUiVariant, () => {
+      if (onShow) {
+        onShow(switchingContext);
+      }
+    });
   }
 
   private addUi(ui: InternalUIInstanceManager): void {
@@ -394,6 +535,45 @@ export class UIManager {
       this.releaseUi(uiInstanceManager);
     }
     this.managerPlayerWrapper.clearEventHandlers();
+  }
+
+  /**
+   * Fires just before UI variants are about to be resolved and the UI variant is possibly switched. It is fired when
+   * the switch is triggered from an automatic switch and when calling {@link resolveUiVariant}.
+   * Can be used to modify the {@link UIConditionContext} before resolving is done.
+   * @returns {EventDispatcher<UIManager, UIConditionContext>}
+   */
+  get onUiVariantResolve(): EventDispatcher<UIManager, UIConditionContext> {
+    return this.events.onUiVariantResolve;
+  }
+
+  /**
+   * Returns the list of all added markers in undefined order.
+   */
+  getTimelineMarkers(): TimelineMarker[] {
+    return this.config.metadata.markers;
+  }
+
+  /**
+   * Adds a marker to the timeline. Does not check for duplicates/overlaps at the `time`.
+   */
+  addTimelineMarker(timelineMarker: TimelineMarker): void {
+    this.config.metadata.markers.push(timelineMarker);
+    this.config.events.onUpdated.dispatch(this);
+  }
+
+  /**
+   * Removes a marker from the timeline (by reference) and returns `true` if the marker has
+   * been part of the timeline and successfully removed, or `false` if the marker could not
+   * be found and thus not removed.
+   */
+  removeTimelineMarker(timelineMarker: TimelineMarker): boolean {
+    if (ArrayUtils.remove(this.config.metadata.markers, timelineMarker) === timelineMarker) {
+      this.config.events.onUpdated.dispatch(this);
+      return true;
+    }
+
+    return false;
   }
 }
 
@@ -478,14 +658,14 @@ export namespace UIManager.Factory {
         controlBar,
         new TitleBar(),
         new RecommendationOverlay(),
-        //new Watermark(),
+        new Watermark(),
         new ErrorMessageOverlay(),
       ],
       cssClasses: ['ui-skin-modern'],
     });
   }
 
-  function modernAdsUI() {
+  export function modernAdsUI() {
     return new UIContainer({
       components: [
         new BufferingOverlay(),
@@ -517,7 +697,7 @@ export namespace UIManager.Factory {
     });
   }
 
-  function modernSmallScreenUI() {
+  export function modernSmallScreenUI() {
     let subtitleOverlay = new SubtitleOverlay();
 
     let settingsPanel = new SettingsPanel({
@@ -569,12 +749,15 @@ export namespace UIManager.Factory {
         new BufferingOverlay(),
         new CastStatusOverlay(),
         new PlaybackToggleOverlay(),
+        new RecommendationOverlay(),
         controlBar,
         new TitleBar({
           components: [
             new MetadataLabel({ content: MetadataLabelContent.Title }),
             new CastToggleButton(),
             new VRToggleButton(),
+            new PictureInPictureToggleButton(),
+            new AirPlayToggleButton(),
             new VolumeToggleButton(),
             new SettingsToggleButton({ settingsPanel: settingsPanel }),
             new FullscreenToggleButton(),
@@ -582,15 +765,15 @@ export namespace UIManager.Factory {
         }),
         settingsPanel,
         subtitleSettingsPanel,
-        new RecommendationOverlay(),
-        //new Watermark(),
+        new Watermark(),
         new ErrorMessageOverlay(),
       ],
       cssClasses: ['ui-skin-modern', 'ui-skin-smallscreen'],
+      hidePlayerStateExceptions: [PlayerUtils.PlayerState.FINISHED],
     });
   }
 
-  function modernSmallScreenAdsUI() {
+  export function modernSmallScreenAdsUI() {
     return new UIContainer({
       components: [
         new BufferingOverlay(),
@@ -615,7 +798,7 @@ export namespace UIManager.Factory {
     });
   }
 
-  function modernCastReceiverUI() {
+  export function modernCastReceiverUI() {
     let controlBar = new ControlBar({
       components: [
         new Container({
@@ -686,8 +869,8 @@ export namespace UIManager.Factory {
     let settingsPanel = new SettingsPanel({
       components: [
         new SettingsPanelItem('Video Quality', new VideoQualitySelectBox()),
-        //new SettingsPanelItem('Audio Track', new AudioTrackSelectBox()),
-        //new SettingsPanelItem('Audio Quality', new AudioQualitySelectBox()),
+        new SettingsPanelItem('Audio Track', new AudioTrackSelectBox()),
+        new SettingsPanelItem('Audio Quality', new AudioQualitySelectBox()),
         new SettingsPanelItem('Subtitles', new SubtitleSelectBox()),
       ],
       hidden: true,
@@ -765,6 +948,8 @@ export namespace UIManager.Factory {
     let settingsPanel = new SettingsPanel({
       components: [
         new SettingsPanelItem('Video Quality', new VideoQualitySelectBox()),
+        new SettingsPanelItem('Audio Track', new AudioTrackSelectBox()),
+        new SettingsPanelItem('Audio Quality', new AudioQualitySelectBox()),
         new SettingsPanelItem('Subtitles', new SubtitleSelectBox()),
       ],
       hidden: true,
@@ -829,7 +1014,7 @@ export interface SeekPreviewArgs extends NoArgs {
   /**
    * The timeline marker associated with the current position, if existing.
    */
-  marker?: TimelineMarker;
+  marker?: SeekBarMarker;
 }
 
 /**
@@ -838,7 +1023,7 @@ export interface SeekPreviewArgs extends NoArgs {
 export class UIInstanceManager {
   private playerWrapper: PlayerWrapper;
   private ui: UIContainer;
-  private config: UIConfig;
+  private config: InternalUIConfig;
 
   private events = {
     onConfigured: new EventDispatcher<UIContainer, NoArgs>(),
@@ -850,15 +1035,16 @@ export class UIInstanceManager {
     onControlsShow: new EventDispatcher<UIContainer, NoArgs>(),
     onPreviewControlsHide: new EventDispatcher<UIContainer, CancelEventArgs>(),
     onControlsHide: new EventDispatcher<UIContainer, NoArgs>(),
+    onRelease: new EventDispatcher<UIContainer, NoArgs>(),
   };
 
-  constructor(player: PlayerAPI, ui: UIContainer, config: UIConfig = {}) {
+  constructor(player: PlayerAPI, ui: UIContainer, config: InternalUIConfig) {
     this.playerWrapper = new PlayerWrapper(player);
     this.ui = ui;
     this.config = config;
   }
 
-  getConfig(): UIConfig {
+  getConfig(): InternalUIConfig {
     return this.config;
   }
 
@@ -942,6 +1128,14 @@ export class UIInstanceManager {
     return this.events.onControlsHide;
   }
 
+  /**
+   * Fires when the UI controls are released.
+   * @returns {EventDispatcher}
+   */
+  get onRelease(): EventDispatcher<UIContainer, NoArgs> {
+    return this.events.onRelease;
+  }
+
   protected clearEventHandlers(): void {
     this.playerWrapper.clearEventHandlers();
 
@@ -1009,6 +1203,7 @@ class InternalUIInstanceManager extends UIInstanceManager {
   releaseControls(): void {
     // Do not call release methods if the components have never been configured; this can result in exceptions
     if (this.configured) {
+      this.onRelease.dispatch(this.getUI());
       this.releaseControlsTree(this.getUI());
       this.configured = false;
     }
