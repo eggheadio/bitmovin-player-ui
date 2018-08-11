@@ -264,7 +264,6 @@
       player.setup(config).then(function () {
         // Add UI to loaded player
         uiManager = bitmovin.playerui.UIManager.Factory.buildDefaultUI(player, uiConfig);
-        console.log({ uiConfig })
       }, function (errorEvent) {
         // Play setup failed, and there's no player UI yet to display the error in
         console.log(errorEvent);
