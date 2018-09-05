@@ -11,7 +11,7 @@ export class HugeReplayButton extends Button<ButtonConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
-      ariaLabel: 'huge replay button',
+      ariaLabel: 'huge replay',
       cssClass: 'ui-hugereplaybutton',
       text: 'Replay',
     }, this.config);

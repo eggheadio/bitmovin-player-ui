@@ -42,7 +42,7 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
     super(config);
 
     const defaultConfig: ToggleButtonConfig = {
-      ariaLabel: 'toggle button',
+      ariaLabel: 'toggle',
       cssClass: 'ui-togglebutton',
       onClass: 'on',
       offClass: 'off',

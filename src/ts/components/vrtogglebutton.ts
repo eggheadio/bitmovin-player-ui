@@ -10,7 +10,7 @@ export class VRToggleButton extends ToggleButton<ToggleButtonConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
-      ariaLabel: 'vr toggle button',
+      ariaLabel: 'vr toggle',
       cssClass: 'ui-vrtogglebutton',
       text: 'VR',
     }, this.config);
