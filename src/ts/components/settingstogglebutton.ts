@@ -35,6 +35,7 @@ export class SettingsToggleButton extends ToggleButton<SettingsToggleButtonConfi
     }
 
     this.config = this.mergeConfig(config, {
+      ariaLabel: 'settings toggle button',
       cssClass: 'ui-settingstogglebutton',
       text: 'Settings',
       settingsPanel: null,

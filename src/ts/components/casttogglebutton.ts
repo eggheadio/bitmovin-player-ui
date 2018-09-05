@@ -10,6 +10,7 @@ export class CastToggleButton extends ToggleButton<ToggleButtonConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
+      ariaLabel: 'cast toggle button',
       cssClass: 'ui-casttogglebutton',
       text: 'Google Cast',
     }, this.config);
