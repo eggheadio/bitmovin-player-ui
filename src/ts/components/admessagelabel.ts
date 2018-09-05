@@ -18,7 +18,7 @@ export class AdMessageLabel extends Label<LabelConfig> {
 
   configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
-
+    
     let text = this.getConfig().text;
 
     let updateMessageHandler = () => {
