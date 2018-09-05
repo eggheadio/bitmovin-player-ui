@@ -18,7 +18,7 @@ export class AdMessageLabel extends Label<LabelConfig> {
 
   configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     super.configure(player, uimanager);
-    console.log("wow")
+    
     let text = this.getConfig().text;
 
     let updateMessageHandler = () => {

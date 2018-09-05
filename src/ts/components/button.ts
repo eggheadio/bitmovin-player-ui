@@ -10,11 +10,6 @@ export interface ButtonConfig extends ComponentConfig {
    * The text on the button.
    */
   text?: string;
-
-  /**
-   * The accessible label on the button.
-   */
-  ariaLabel?: string;
 }
 
 /**
@@ -40,7 +35,6 @@ export class Button<Config extends ButtonConfig> extends Component<ButtonConfig>
       'type': 'button',
       'id': this.config.id,
       'class': this.getCssClasses(),
-      'aria-label': this.config.ariaLabel,
     }).append(new DOM('span', {
       'class': this.prefixCss('label'),
     }).html(this.config.text));

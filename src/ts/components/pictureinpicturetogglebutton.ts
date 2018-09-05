@@ -10,7 +10,6 @@ export class PictureInPictureToggleButton extends ToggleButton<ToggleButtonConfi
     super(config);
 
     this.config = this.mergeConfig(config, {
-      ariaLabel: 'picture in picture toggle button',
       cssClass: 'ui-piptogglebutton',
       text: 'Picture-in-Picture',
     }, this.config);

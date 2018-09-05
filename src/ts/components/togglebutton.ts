@@ -18,11 +18,6 @@ export interface ToggleButtonConfig extends ButtonConfig {
    * The text on the button.
    */
   text?: string;
-
-  /**
-   * The accessible label on the button.
-   */
-  ariaLabel?: string;
 }
 
 /**
@@ -42,7 +37,6 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
     super(config);
 
     const defaultConfig: ToggleButtonConfig = {
-      ariaLabel: 'toggle button',
       cssClass: 'ui-togglebutton',
       onClass: 'on',
       offClass: 'off',
