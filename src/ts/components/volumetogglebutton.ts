@@ -14,6 +14,7 @@ export class VolumeToggleButton extends ToggleButton<ToggleButtonConfig> {
       text: 'Volume/Mute',
       onClass: 'muted',
       offClass: 'unmuted',
+      ariaLabel: 'volume toggle button'
     };
 
     this.config = this.mergeConfig(config, defaultConfig, this.config);

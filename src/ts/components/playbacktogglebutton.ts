@@ -15,6 +15,7 @@ export class PlaybackToggleButton extends ToggleButton<ToggleButtonConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
+      ariaLabel: 'play pause button',
       cssClass: 'ui-playbacktogglebutton',
       text: 'Play/Pause',
     }, this.config);

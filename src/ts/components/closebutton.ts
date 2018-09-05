@@ -21,6 +21,7 @@ export class CloseButton extends Button<CloseButtonConfig> {
     super(config);
 
     this.config = this.mergeConfig(config, {
+      ariaLabel: 'close button',
       cssClass: 'ui-closebutton',
       text: 'Close',
     }, this.config);
