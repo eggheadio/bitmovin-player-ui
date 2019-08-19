@@ -1,47 +1,50 @@
-import {ToggleButtonConfig} from './togglebutton';
-import {PlaybackToggleButton} from './playbacktogglebutton';
-import {DOM} from '../dom';
-import {UIInstanceManager} from '../uimanager';
-import PlayerEvent = bitmovin.PlayerAPI.PlayerEvent;
-import WarningEvent = bitmovin.PlayerAPI.WarningEvent;
+import {ToggleButtonConfig} from './togglebutton'
+import {PlaybackToggleButton} from './playbacktogglebutton'
+import {DOM} from '../dom'
+import {UIInstanceManager} from '../uimanager'
+import PlayerEvent = bitmovin.PlayerAPI.PlayerEvent
+import WarningEvent = bitmovin.PlayerAPI.WarningEvent
 
 /**
  * A button that overlays the video and toggles between playback and pause.
  */
 export class HugePlaybackToggleButton extends PlaybackToggleButton {
+  constructor(config: ToggleButtonConfig = {ariaLabel: 'play/pause'}) {
+    super(config)
 
-  constructor(config: ToggleButtonConfig = {}) {
-    super(config);
-
-    this.config = this.mergeConfig(config, {
-      cssClass: 'ui-hugeplaybacktogglebutton',
-      text: 'Play/Pause',
-    }, this.config);
+    this.config = this.mergeConfig(
+      config,
+      {
+        cssClass: 'ui-hugeplaybacktogglebutton',
+        text: 'Play/Pause',
+      },
+      this.config,
+    )
   }
 
   configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
     // Update button state through API events
-    super.configure(player, uimanager, false);
+    super.configure(player, uimanager, false)
 
     let togglePlayback = () => {
       if (player.isPlaying()) {
-        player.pause('ui');
+        player.pause('ui')
       } else {
-        player.play('ui');
+        player.play('ui')
       }
-    };
+    }
 
     let toggleFullscreen = () => {
       if (player.isFullscreen()) {
-        player.exitFullscreen();
+        player.exitFullscreen()
       } else {
-        player.enterFullscreen();
+        player.enterFullscreen()
       }
-    };
+    }
 
-    let firstPlay = true;
-    let clickTime = 0;
-    let doubleClickTime = 0;
+    let firstPlay = true
+    let clickTime = 0
+    let doubleClickTime = 0
 
     /*
      * YouTube-style toggle button handling
@@ -69,109 +72,122 @@ export class HugePlaybackToggleButton extends PlaybackToggleButton {
         // If we disable the flag here, onClick was triggered programmatically instead of by a user interaction, and
         // playback is blocked (e.g. on mobile devices due to the programmatic play() call), we loose the chance to
         // ever start playback through a user interaction again with this button.
-        togglePlayback();
-        return;
+        togglePlayback()
+        return
       }
 
-      let now = Date.now();
+      let now = Date.now()
 
       if (now - clickTime < 200) {
         // We have a double click inside the 200ms interval, just toggle fullscreen mode
-        toggleFullscreen();
-        doubleClickTime = now;
-        return;
+        toggleFullscreen()
+        doubleClickTime = now
+        return
       } else if (now - clickTime < 500) {
         // We have a double click inside the 500ms interval, undo playback toggle and toggle fullscreen mode
-        toggleFullscreen();
-        togglePlayback();
-        doubleClickTime = now;
-        return;
+        toggleFullscreen()
+        togglePlayback()
+        doubleClickTime = now
+        return
       }
 
-      clickTime = now;
+      clickTime = now
 
       setTimeout(() => {
         if (Date.now() - doubleClickTime > 200) {
           // No double click detected, so we toggle playback and wait what happens next
-          togglePlayback();
+          togglePlayback()
         }
-      }, 200);
-    });
+      }, 200)
+    })
 
     player.addEventHandler(player.EVENT.ON_PLAY, () => {
       // Playback has really started, we can disable the flag to switch to normal toggle button handling
-      firstPlay = false;
-    });
+      firstPlay = false
+    })
 
     player.addEventHandler(player.EVENT.ON_WARNING, (event: WarningEvent) => {
       // 5008 == Playback could not be started
       if (event.code === 5008) {
         // if playback could not be started, reset the first play flag as we need the user interaction to start
-        firstPlay = true;
+        firstPlay = true
       }
-    });
+    })
 
     // Hide button while initializing a Cast session
     let castInitializationHandler = (event: PlayerEvent) => {
       if (event.type === player.EVENT.ON_CAST_START) {
         // Hide button when session is being initialized
-        this.hide();
+        this.hide()
       } else {
         // Show button when session is established or initialization was aborted
-        this.show();
+        this.show()
       }
-    };
-    player.addEventHandler(player.EVENT.ON_CAST_START, castInitializationHandler);
-    player.addEventHandler(player.EVENT.ON_CAST_STARTED, castInitializationHandler);
-    player.addEventHandler(player.EVENT.ON_CAST_STOPPED, castInitializationHandler);
+    }
+    player.addEventHandler(
+      player.EVENT.ON_CAST_START,
+      castInitializationHandler,
+    )
+    player.addEventHandler(
+      player.EVENT.ON_CAST_STARTED,
+      castInitializationHandler,
+    )
+    player.addEventHandler(
+      player.EVENT.ON_CAST_STOPPED,
+      castInitializationHandler,
+    )
 
     const suppressPlayButtonTransitionAnimation = () => {
       // Disable the current animation
-      this.setTransitionAnimationsEnabled(false);
+      this.setTransitionAnimationsEnabled(false)
 
       // Enable the transition animations for the next state change
       this.onToggle.subscribeOnce(() => {
-        this.setTransitionAnimationsEnabled(true);
-      });
-    };
+        this.setTransitionAnimationsEnabled(true)
+      })
+    }
 
     // Hide the play button animation when the UI is loaded (it should only be animated on state changes)
-    suppressPlayButtonTransitionAnimation();
+    suppressPlayButtonTransitionAnimation()
 
-    const isAutoplayEnabled = player.getConfig().playback && Boolean(player.getConfig().playback.autoplay);
+    const isAutoplayEnabled =
+      player.getConfig().playback &&
+      Boolean(player.getConfig().playback.autoplay)
     // We only know if an autoplay attempt is upcoming if the player is not yet ready. It the player is already ready,
     // the attempt might be upcoming or might have already happened, but we don't have to handle that because we can
     // simply rely on isPlaying and the play state events.
-    const isAutoplayUpcoming = !player.isReady() && isAutoplayEnabled;
+    const isAutoplayUpcoming = !player.isReady() && isAutoplayEnabled
 
     // Hide the play button when the player is already playing or autoplay is upcoming
     if (player.isPlaying() || isAutoplayUpcoming) {
       // Hide the play button (switch to playing state)
-      this.on();
+      this.on()
       // Disable the animation of the playing state switch
-      suppressPlayButtonTransitionAnimation();
+      suppressPlayButtonTransitionAnimation()
 
       // Show the play button without an animation if a play attempt is blocked
       player.addEventHandler(player.EVENT.ON_WARNING, (event: WarningEvent) => {
         if (event.code === 5008) {
-          suppressPlayButtonTransitionAnimation();
+          suppressPlayButtonTransitionAnimation()
         }
-      });
+      })
     }
   }
 
   protected toDomElement(): DOM {
-    let buttonElement = super.toDomElement();
+    let buttonElement = super.toDomElement()
 
     // Add child that contains the play button image
     // Setting the image directly on the button does not work together with scaling animations, because the button
     // can cover the whole video player are and scaling would extend it beyond. By adding an inner element, confined
     // to the size if the image, it can scale inside the player without overshooting.
-    buttonElement.append(new DOM('div', {
-      'class': this.prefixCss('image'),
-    }));
+    buttonElement.append(
+      new DOM('div', {
+        class: this.prefixCss('image'),
+      }),
+    )
 
-    return buttonElement;
+    return buttonElement
   }
 
   /**
@@ -180,12 +196,14 @@ export class HugePlaybackToggleButton extends PlaybackToggleButton {
    * @param {boolean} enabled true to enable the animations (default), false to disable them
    */
   protected setTransitionAnimationsEnabled(enabled: boolean): void {
-    const noTransitionAnimationsClass = this.prefixCss('no-transition-animations');
+    const noTransitionAnimationsClass = this.prefixCss(
+      'no-transition-animations',
+    )
 
     if (enabled) {
-      this.getDomElement().removeClass(noTransitionAnimationsClass);
+      this.getDomElement().removeClass(noTransitionAnimationsClass)
     } else if (!this.getDomElement().hasClass(noTransitionAnimationsClass)) {
-      this.getDomElement().addClass(noTransitionAnimationsClass);
+      this.getDomElement().addClass(noTransitionAnimationsClass)
     }
   }
 }
