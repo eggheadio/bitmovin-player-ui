@@ -1,6 +1,6 @@
-import {Button, ButtonConfig} from './button';
-import {NoArgs, EventDispatcher, Event} from '../eventdispatcher';
-import { UIInstanceManager } from '../uimanager';
+import {Button, ButtonConfig} from './button'
+import {NoArgs, EventDispatcher, Event} from '../eventdispatcher'
+import {UIInstanceManager} from '../uimanager'
 
 /**
  * Configuration interface for a toggle button component.
@@ -9,45 +9,49 @@ export interface ToggleButtonConfig extends ButtonConfig {
   /**
    * The CSS class that marks the on-state of the button.
    */
-  onClass?: string;
+  onClass?: string
   /**
    * The CSS class that marks the off-state of the button.
    */
-  offClass?: string;
+  offClass?: string
   /**
    * The text on the button.
    */
-  text?: string;
+  text?: string
+
+  ariaLabel?: string
 }
 
 /**
  * A button that can be toggled between 'on' and 'off' states.
  */
-export class ToggleButton<Config extends ToggleButtonConfig> extends Button<ToggleButtonConfig> {
-
-  private onState: boolean;
+export class ToggleButton<Config extends ToggleButtonConfig> extends Button<
+  ToggleButtonConfig
+> {
+  private onState: boolean
 
   private toggleButtonEvents = {
     onToggle: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
     onToggleOn: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
     onToggleOff: new EventDispatcher<ToggleButton<Config>, NoArgs>(),
-  };
+  }
 
   constructor(config: ToggleButtonConfig) {
-    super(config);
+    super(config)
 
     const defaultConfig: ToggleButtonConfig = {
       cssClass: 'ui-togglebutton',
       onClass: 'on',
       offClass: 'off',
-    };
+    }
 
-    this.config = this.mergeConfig(config, defaultConfig, this.config);
+    this.config = this.mergeConfig(config, defaultConfig, this.config)
   }
 
   configure(player: bitmovin.PlayerAPI, uimanager: UIInstanceManager): void {
-    const config = this.getConfig() as ToggleButtonConfig;
-    this.getDomElement().addClass(this.prefixCss(config.offClass));
+    const config = this.getConfig() as ToggleButtonConfig
+    this.getDomElement().addClass(this.prefixCss(config.offClass))
+    this.getDomElement().addAttribute('aria-label', config.ariaLabel)
   }
 
   /**
@@ -55,14 +59,14 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    */
   on() {
     if (this.isOff()) {
-      const config = this.getConfig() as ToggleButtonConfig;
+      const config = this.getConfig() as ToggleButtonConfig
 
-      this.onState = true;
-      this.getDomElement().removeClass(this.prefixCss(config.offClass));
-      this.getDomElement().addClass(this.prefixCss(config.onClass));
+      this.onState = true
+      this.getDomElement().removeClass(this.prefixCss(config.offClass))
+      this.getDomElement().addClass(this.prefixCss(config.onClass))
 
-      this.onToggleEvent();
-      this.onToggleOnEvent();
+      this.onToggleEvent()
+      this.onToggleOnEvent()
     }
   }
 
@@ -71,14 +75,14 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    */
   off() {
     if (this.isOn()) {
-      const config = this.getConfig() as ToggleButtonConfig;
+      const config = this.getConfig() as ToggleButtonConfig
 
-      this.onState = false;
-      this.getDomElement().removeClass(this.prefixCss(config.onClass));
-      this.getDomElement().addClass(this.prefixCss(config.offClass));
+      this.onState = false
+      this.getDomElement().removeClass(this.prefixCss(config.onClass))
+      this.getDomElement().addClass(this.prefixCss(config.offClass))
 
-      this.onToggleEvent();
-      this.onToggleOffEvent();
+      this.onToggleEvent()
+      this.onToggleOffEvent()
     }
   }
 
@@ -87,9 +91,9 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    */
   toggle() {
     if (this.isOn()) {
-      this.off();
+      this.off()
     } else {
-      this.on();
+      this.on()
     }
   }
 
@@ -98,7 +102,7 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    * @returns {boolean} true if button is 'on', false if 'off'
    */
   isOn(): boolean {
-    return this.onState;
+    return this.onState
   }
 
   /**
@@ -106,27 +110,27 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    * @returns {boolean} true if button is 'off', false if 'on'
    */
   isOff(): boolean {
-    return !this.isOn();
+    return !this.isOn()
   }
 
   protected onClickEvent() {
-    super.onClickEvent();
+    super.onClickEvent()
 
     // Fire the toggle event together with the click event
     // (they are technically the same, only the semantics are different)
-    this.onToggleEvent();
+    this.onToggleEvent()
   }
 
   protected onToggleEvent() {
-    this.toggleButtonEvents.onToggle.dispatch(this);
+    this.toggleButtonEvents.onToggle.dispatch(this)
   }
 
   protected onToggleOnEvent() {
-    this.toggleButtonEvents.onToggleOn.dispatch(this);
+    this.toggleButtonEvents.onToggleOn.dispatch(this)
   }
 
   protected onToggleOffEvent() {
-    this.toggleButtonEvents.onToggleOff.dispatch(this);
+    this.toggleButtonEvents.onToggleOff.dispatch(this)
   }
 
   /**
@@ -134,7 +138,7 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    * @returns {Event<ToggleButton<Config>, NoArgs>}
    */
   get onToggle(): Event<ToggleButton<Config>, NoArgs> {
-    return this.toggleButtonEvents.onToggle.getEvent();
+    return this.toggleButtonEvents.onToggle.getEvent()
   }
 
   /**
@@ -142,7 +146,7 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    * @returns {Event<ToggleButton<Config>, NoArgs>}
    */
   get onToggleOn(): Event<ToggleButton<Config>, NoArgs> {
-    return this.toggleButtonEvents.onToggleOn.getEvent();
+    return this.toggleButtonEvents.onToggleOn.getEvent()
   }
 
   /**
@@ -150,6 +154,6 @@ export class ToggleButton<Config extends ToggleButtonConfig> extends Button<Togg
    * @returns {Event<ToggleButton<Config>, NoArgs>}
    */
   get onToggleOff(): Event<ToggleButton<Config>, NoArgs> {
-    return this.toggleButtonEvents.onToggleOff.getEvent();
+    return this.toggleButtonEvents.onToggleOff.getEvent()
   }
 }

@@ -1,10 +1,10 @@
 export interface Offset {
-  left: number;
-  top: number;
+  left: number
+  top: number
 }
 
 export interface CssProperties {
-  [propertyName: string]: string;
+  [propertyName: string]: string
 }
 
 /**
@@ -19,74 +19,72 @@ export interface CssProperties {
  * Built with the help of: http://youmightnotneedjquery.com/
  */
 export class DOM {
-
-  private document: Document;
+  private document: Document
 
   /**
    * The list of elements that the instance wraps. Take care that not all methods can operate on the whole list,
    * getters usually just work on the first element.
    */
-  private elements: HTMLElement[];
+  private elements: HTMLElement[]
 
   /**
    * Creates a DOM element.
    * @param tagName the tag name of the DOM element
    * @param attributes a list of attributes of the element
    */
-  constructor(tagName: string, attributes: {[name: string]: string});
+  constructor(tagName: string, attributes: {[name: string]: string})
   /**
    * Selects all elements from the DOM that match the specified selector.
    * @param selector the selector to match DOM elements with
    */
-  constructor(selector: string);
+  constructor(selector: string)
   /**
    * Wraps a plain HTMLElement with a DOM instance.
    * @param element the HTMLElement to wrap with DOM
    */
-  constructor(element: HTMLElement);
+  constructor(element: HTMLElement)
   /**
    * Wraps a list of plain HTMLElements with a DOM instance.
    * @param elements the HTMLElements to wrap with DOM
    */
-  constructor(elements: HTMLElement[]);
+  constructor(elements: HTMLElement[])
   /**
    * Wraps the document with a DOM instance. Useful to attach event listeners to the document.
    * @param document the document to wrap
    */
-  constructor(document: Document);
-  constructor(something: string | HTMLElement | HTMLElement[] | Document, attributes?: {[name: string]: string}) {
-    this.document = document; // Set the global document to the local document field
+  constructor(document: Document)
+  constructor(
+    something: string | HTMLElement | HTMLElement[] | Document,
+    attributes?: {[name: string]: string},
+  ) {
+    this.document = document // Set the global document to the local document field
 
     if (something instanceof Array) {
       if (something.length > 0 && something[0] instanceof HTMLElement) {
-        let elements = something;
-        this.elements = elements;
+        let elements = something
+        this.elements = elements
       }
-    }
-    else if (something instanceof HTMLElement) {
-      let element = something;
-      this.elements = [element];
-    }
-    else if (something instanceof Document) {
+    } else if (something instanceof HTMLElement) {
+      let element = something
+      this.elements = [element]
+    } else if (something instanceof Document) {
       // When a document is passed in, we do not do anything with it, but by setting this.elements to null
       // we give the event handling method a means to detect if the events should be registered on the document
       // instead of elements.
-      this.elements = null;
-    }
-    else if (attributes) {
-      let tagName = something;
-      let element = document.createElement(tagName);
+      this.elements = null
+    } else if (attributes) {
+      let tagName = something
+      let element = document.createElement(tagName)
 
       for (let attributeName in attributes) {
-        let attributeValue = attributes[attributeName];
-        element.setAttribute(attributeName, attributeValue);
+        let attributeValue = attributes[attributeName]
+        element.setAttribute(attributeName, attributeValue)
       }
 
-      this.elements = [element];
-    }
-    else {
-      let selector = something;
-      this.elements = this.findChildElements(selector);
+      this.elements = [element]
+    } else {
+      let selector = something
+      this.elements = this.findChildElements(selector)
     }
   }
 
@@ -95,7 +93,7 @@ export class DOM {
    * @returns {number} the number of elements
    */
   get length(): number {
-    return this.elements ? this.elements.length : 0;
+    return this.elements ? this.elements.length : 0
   }
 
   /**
@@ -104,29 +102,33 @@ export class DOM {
    * @deprecated use {@link #get()} instead
    */
   getElements(): HTMLElement[] {
-    return this.get();
+    return this.get()
   }
 
   /**
    * Gets the HTML elements that this DOM instance currently holds.
    * @returns {HTMLElement[]} the raw HTML elements
    */
-  get(): HTMLElement[];
+  get(): HTMLElement[]
   /**
    * Gets an HTML element from the list elements that this DOM instance currently holds.
    * @param index The zero-based index into the element list. Can be negative to return an element from the end,
    *    e.g. -1 returns the last element.
    */
-  get(index: number): HTMLElement;
+  get(index: number): HTMLElement
   get(index?: number): HTMLElement | HTMLElement[] {
     if (index === undefined) {
-      return this.elements;
-    } else if (!this.elements || index >= this.elements.length || index < -this.elements.length) {
-      return undefined;
+      return this.elements
+    } else if (
+      !this.elements ||
+      index >= this.elements.length ||
+      index < -this.elements.length
+    ) {
+      return undefined
     } else if (index < 0) {
-      return this.elements[this.elements.length - index];
+      return this.elements[this.elements.length - index]
     } else {
-      return this.elements[index];
+      return this.elements[index]
     }
   }
 
@@ -136,34 +138,38 @@ export class DOM {
    */
   private forEach(handler: (element: HTMLElement) => void): void {
     if (!this.elements) {
-      return;
+      return
     }
-    this.elements.forEach((element) => {
-      handler(element);
-    });
+    this.elements.forEach(element => {
+      handler(element)
+    })
   }
 
-  private findChildElementsOfElement(element: HTMLElement | Document, selector: string): HTMLElement[] {
-    let childElements = element.querySelectorAll(selector);
+  private findChildElementsOfElement(
+    element: HTMLElement | Document,
+    selector: string,
+  ): HTMLElement[] {
+    let childElements = element.querySelectorAll(selector)
 
     // Convert NodeList to Array
     // https://toddmotto.com/a-comprehensive-dive-into-nodelists-arrays-converting-nodelists-and-understanding-the-dom/
-    return [].slice.call(childElements);
+    return [].slice.call(childElements)
   }
 
   private findChildElements(selector: string): HTMLElement[] {
-    let allChildElements = <HTMLElement[]>[];
+    let allChildElements = <HTMLElement[]>[]
 
     if (this.elements) {
-      this.forEach((element) => {
-        allChildElements = allChildElements.concat(this.findChildElementsOfElement(element, selector));
-      });
-    }
-    else {
-      return this.findChildElementsOfElement(document, selector);
+      this.forEach(element => {
+        allChildElements = allChildElements.concat(
+          this.findChildElementsOfElement(element, selector),
+        )
+      })
+    } else {
+      return this.findChildElementsOfElement(document, selector)
     }
 
-    return allChildElements;
+    return allChildElements
   }
 
   /**
@@ -172,43 +178,42 @@ export class DOM {
    * @returns {DOM} a new DOM instance representing all matched children
    */
   find(selector: string): DOM {
-    let allChildElements = this.findChildElements(selector);
-    return new DOM(allChildElements);
+    let allChildElements = this.findChildElements(selector)
+    return new DOM(allChildElements)
   }
 
   /**
    * Returns a string of the inner HTML content of the first element.
    */
-  html(): string;
+  html(): string
   /**
    * Sets the inner HTML content of all elements.
    * @param content a string of plain text or HTML markup
    */
-  html(content: string): DOM;
+  html(content: string): DOM
   html(content?: string): string | DOM {
     if (arguments.length > 0) {
-      return this.setHtml(content);
-    }
-    else {
-      return this.getHtml();
+      return this.setHtml(content)
+    } else {
+      return this.getHtml()
     }
   }
 
   private getHtml(): string | null {
-    return this.elements[0].innerHTML;
+    return this.elements[0].innerHTML
   }
 
   private setHtml(content: string): DOM {
     if (content === undefined || content == null) {
       // Set to empty string to avoid innerHTML getting set to 'undefined' (all browsers) or 'null' (IE9)
-      content = '';
+      content = ''
     }
 
-    this.forEach((element) => {
-      element.innerHTML = content;
-    });
+    this.forEach(element => {
+      element.innerHTML = content
+    })
 
-    return this;
+    return this
   }
 
   /**
@@ -216,10 +221,10 @@ export class DOM {
    * @returns {DOM}
    */
   empty(): DOM {
-    this.forEach((element) => {
-      element.innerHTML = '';
-    });
-    return this;
+    this.forEach(element => {
+      element.innerHTML = ''
+    })
+    return this
   }
 
   /**
@@ -228,14 +233,16 @@ export class DOM {
    * @returns {string} the value of a form element
    */
   val(): string {
-    let element = this.elements[0];
+    let element = this.elements[0]
 
-    if (element instanceof HTMLSelectElement || element instanceof HTMLInputElement) {
-      return element.value;
-    }
-    else {
+    if (
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLInputElement
+    ) {
+      return element.value
+    } else {
       // TODO add support for missing form elements
-      throw new Error(`val() not supported for ${typeof element}`);
+      throw new Error(`val() not supported for ${typeof element}`)
     }
   }
 
@@ -243,62 +250,60 @@ export class DOM {
    * Returns the value of an attribute on the first element.
    * @param attribute
    */
-  attr(attribute: string): string | null;
+  attr(attribute: string): string | null
   /**
    * Sets an attribute on all elements.
    * @param attribute the name of the attribute
    * @param value the value of the attribute
    */
-  attr(attribute: string, value: string): DOM;
+  attr(attribute: string, value: string): DOM
   attr(attribute: string, value?: string): string | null | DOM {
     if (arguments.length > 1) {
-      return this.setAttr(attribute, value);
-    }
-    else {
-      return this.getAttr(attribute);
+      return this.setAttr(attribute, value)
+    } else {
+      return this.getAttr(attribute)
     }
   }
 
   private getAttr(attribute: string): string | null {
-    return this.elements[0].getAttribute(attribute);
+    return this.elements[0].getAttribute(attribute)
   }
 
   private setAttr(attribute: string, value: string): DOM {
-    this.forEach((element) => {
-      element.setAttribute(attribute, value);
-    });
-    return this;
+    this.forEach(element => {
+      element.setAttribute(attribute, value)
+    })
+    return this
   }
 
   /**
    * Returns the value of a data element on the first element.
    * @param dataAttribute the name of the data attribute without the 'data-' prefix
    */
-  data(dataAttribute: string): string | null;
+  data(dataAttribute: string): string | null
   /**
    * Sets a data attribute on all elements.
    * @param dataAttribute the name of the data attribute without the 'data-' prefix
    * @param value the value of the data attribute
    */
-  data(dataAttribute: string, value: string): DOM;
+  data(dataAttribute: string, value: string): DOM
   data(dataAttribute: string, value?: string): string | null | DOM {
     if (arguments.length > 1) {
-      return this.setData(dataAttribute, value);
-    }
-    else {
-      return this.getData(dataAttribute);
+      return this.setData(dataAttribute, value)
+    } else {
+      return this.getData(dataAttribute)
     }
   }
 
   private getData(dataAttribute: string): string | null {
-    return this.elements[0].getAttribute('data-' + dataAttribute);
+    return this.elements[0].getAttribute('data-' + dataAttribute)
   }
 
   private setData(dataAttribute: string, value: string): DOM {
-    this.forEach((element) => {
-      element.setAttribute('data-' + dataAttribute, value);
-    });
-    return this;
+    this.forEach(element => {
+      element.setAttribute('data-' + dataAttribute, value)
+    })
+    return this
   }
 
   /**
@@ -307,26 +312,26 @@ export class DOM {
    * @returns {DOM}
    */
   append(...childElements: DOM[]): DOM {
-    this.forEach((element) => {
-      childElements.forEach((childElement) => {
+    this.forEach(element => {
+      childElements.forEach(childElement => {
         childElement.elements.forEach((_, index) => {
-          element.appendChild(childElement.elements[index]);
-        });
-      });
-    });
-    return this;
+          element.appendChild(childElement.elements[index])
+        })
+      })
+    })
+    return this
   }
 
   /**
    * Removes all elements from the DOM.
    */
   remove(): void {
-    this.forEach((element) => {
-      let parent = element.parentNode;
+    this.forEach(element => {
+      let parent = element.parentNode
       if (parent) {
-        parent.removeChild(element);
+        parent.removeChild(element)
       }
-    });
+    })
   }
 
   /**
@@ -334,9 +339,9 @@ export class DOM {
    * @returns {Offset}
    */
   offset(): Offset {
-    let element = this.elements[0];
-    let elementRect = element.getBoundingClientRect();
-    let htmlRect = document.body.parentElement.getBoundingClientRect();
+    let element = this.elements[0]
+    let elementRect = element.getBoundingClientRect()
+    let htmlRect = document.body.parentElement.getBoundingClientRect()
 
     // Virtual viewport scroll handling (e.g. pinch zoomed viewports in mobile browsers or desktop Chrome/Edge)
     // 'normal' zooms and virtual viewport zooms (aka layout viewport) result in different
@@ -354,7 +359,7 @@ export class DOM {
     return {
       top: elementRect.top - htmlRect.top,
       left: elementRect.left - htmlRect.left,
-    };
+    }
   }
 
   /**
@@ -363,7 +368,7 @@ export class DOM {
    */
   width(): number {
     // TODO check if this is the same as jQuery's width() (probably not)
-    return this.elements[0].offsetWidth;
+    return this.elements[0].offsetWidth
   }
 
   /**
@@ -372,7 +377,7 @@ export class DOM {
    */
   height(): number {
     // TODO check if this is the same as jQuery's height() (probably not)
-    return this.elements[0].offsetHeight;
+    return this.elements[0].offsetHeight
   }
 
   /**
@@ -382,20 +387,19 @@ export class DOM {
    * @returns {DOM}
    */
   on(eventName: string, eventHandler: EventListenerOrEventListenerObject): DOM {
-    let events = eventName.split(' ');
+    let events = eventName.split(' ')
 
-    events.forEach((event) => {
+    events.forEach(event => {
       if (this.elements == null) {
-        this.document.addEventListener(event, eventHandler);
+        this.document.addEventListener(event, eventHandler)
+      } else {
+        this.forEach(element => {
+          element.addEventListener(event, eventHandler)
+        })
       }
-      else {
-        this.forEach((element) => {
-          element.addEventListener(event, eventHandler);
-        });
-      }
-    });
+    })
 
-    return this;
+    return this
   }
 
   /**
@@ -404,21 +408,23 @@ export class DOM {
    * @param eventHandler the event handler to remove
    * @returns {DOM}
    */
-  off(eventName: string, eventHandler: EventListenerOrEventListenerObject): DOM {
-    let events = eventName.split(' ');
+  off(
+    eventName: string,
+    eventHandler: EventListenerOrEventListenerObject,
+  ): DOM {
+    let events = eventName.split(' ')
 
-    events.forEach((event) => {
+    events.forEach(event => {
       if (this.elements == null) {
-        this.document.removeEventListener(event, eventHandler);
+        this.document.removeEventListener(event, eventHandler)
+      } else {
+        this.forEach(element => {
+          element.removeEventListener(event, eventHandler)
+        })
       }
-      else {
-        this.forEach((element) => {
-          element.removeEventListener(event, eventHandler);
-        });
-      }
-    });
+    })
 
-    return this;
+    return this
   }
 
   /**
@@ -427,21 +433,35 @@ export class DOM {
    * @returns {DOM}
    */
   addClass(className: string): DOM {
-    this.forEach((element) => {
+    this.forEach(element => {
       if (element.classList) {
-        const classNames = className.split(' ')
-          .filter(className => className.length > 0);
+        const classNames = className
+          .split(' ')
+          .filter(className => className.length > 0)
 
         if (classNames.length > 0) {
-          element.classList.add(...classNames);
+          element.classList.add(...classNames)
         }
+      } else {
+        element.className += ' ' + className
       }
-      else {
-        element.className += ' ' + className;
-      }
-    });
+    })
 
-    return this;
+    return this
+  }
+
+  /**
+   * Adds the specified attribute to an element
+   * @param attributeKey
+   * @param attributeValue
+   * @returns {DOM}
+   */
+  addAttribute(attributeKey: string, attributeValue: string): DOM {
+    this.forEach(element => {
+      element.setAttribute(attributeKey, attributeValue)
+    })
+
+    return this
   }
 
   /**
@@ -450,22 +470,27 @@ export class DOM {
    * @returns {DOM}
    */
   removeClass(className: string): DOM {
-    this.forEach((element) => {
+    this.forEach(element => {
       if (element.classList) {
-        const classNames = className.split(' ')
-          .filter(className => className.length > 0);
+        const classNames = className
+          .split(' ')
+          .filter(className => className.length > 0)
 
         if (classNames.length > 0) {
-          element.classList.remove(...classNames);
+          element.classList.remove(...classNames)
         }
-      }
-      else {
+      } else {
         element.className = element.className.replace(
-          new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+          new RegExp(
+            '(^|\\b)' + className.split(' ').join('|') + '(\\b|$)',
+            'gi',
+          ),
+          ' ',
+        )
       }
-    });
+    })
 
-    return this;
+    return this
   }
 
   /**
@@ -474,78 +499,84 @@ export class DOM {
    * @returns {boolean} true if one of the elements has the class attached, else if no element has it attached
    */
   hasClass(className: string): boolean {
-    let hasClass = false;
+    let hasClass = false
 
-    this.forEach((element) => {
+    this.forEach(element => {
       if (element.classList) {
         if (element.classList.contains(className)) {
           // Since we are inside a handler, we can't just 'return true'. Instead, we save it to a variable
           // and return it at the end of the function body.
-          hasClass = true;
+          hasClass = true
         }
-      }
-      else {
-        if (new RegExp('(^| )' + className + '( |$)', 'gi').test(element.className)) {
+      } else {
+        if (
+          new RegExp('(^| )' + className + '( |$)', 'gi').test(
+            element.className,
+          )
+        ) {
           // See comment above
-          hasClass = true;
+          hasClass = true
         }
       }
-    });
+    })
 
-    return hasClass;
+    return hasClass
   }
 
   /**
    * Returns the value of a CSS property of the first element.
    * @param propertyName the name of the CSS property to retrieve the value of
    */
-  css(propertyName: string): string | null;
+  css(propertyName: string): string | null
   /**
    * Sets the value of a CSS property on all elements.
    * @param propertyName the name of the CSS property to set the value for
    * @param value the value to set for the given CSS property
    */
-  css(propertyName: string, value: string): DOM;
+  css(propertyName: string, value: string): DOM
   /**
    * Sets a collection of CSS properties and their values on all elements.
    * @param propertyValueCollection an object containing pairs of property names and their values
    */
-  css(propertyValueCollection: CssProperties): DOM;
-  css(propertyNameOrCollection: string | CssProperties, value?: string): string | null | DOM {
+  css(propertyValueCollection: CssProperties): DOM
+  css(
+    propertyNameOrCollection: string | CssProperties,
+    value?: string,
+  ): string | null | DOM {
     if (typeof propertyNameOrCollection === 'string') {
-      let propertyName = propertyNameOrCollection;
+      let propertyName = propertyNameOrCollection
 
       if (arguments.length === 2) {
-        return this.setCss(propertyName, value);
+        return this.setCss(propertyName, value)
+      } else {
+        return this.getCss(propertyName)
       }
-      else {
-        return this.getCss(propertyName);
-      }
-    }
-    else {
-      let propertyValueCollection = propertyNameOrCollection;
-      return this.setCssCollection(propertyValueCollection);
+    } else {
+      let propertyValueCollection = propertyNameOrCollection
+      return this.setCssCollection(propertyValueCollection)
     }
   }
 
   private getCss(propertyName: string): string | null {
-    return getComputedStyle(this.elements[0])[<any>propertyName];
+    return getComputedStyle(this.elements[0])[<any>propertyName]
   }
 
   private setCss(propertyName: string, value: string): DOM {
-    this.forEach((element) => {
+    this.forEach(element => {
       // <any> cast to resolve TS7015: http://stackoverflow.com/a/36627114/370252
-      element.style[<any>propertyName] = value;
-    });
-    return this;
+      element.style[<any>propertyName] = value
+    })
+    return this
   }
 
-  private setCssCollection(ruleValueCollection: {[ruleName: string]: string}): DOM {
-    this.forEach((element) => {
+  private setCssCollection(ruleValueCollection: {
+    [ruleName: string]: string
+  }): DOM {
+    this.forEach(element => {
       // http://stackoverflow.com/a/34490573/370252
-      Object.assign(element.style, ruleValueCollection);
-    });
+      Object.assign(element.style, ruleValueCollection)
+    })
 
-    return this;
+    return this
   }
 }
